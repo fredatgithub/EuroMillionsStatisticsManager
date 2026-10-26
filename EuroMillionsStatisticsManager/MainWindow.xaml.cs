@@ -19,6 +19,8 @@ namespace EuroMillionsStatisticsManager
     public MainWindow()
     {
       InitializeComponent();
+      var version = typeof(MainWindow).Assembly.GetName().Version;
+      Title = $"{Title} - V{version?.ToString(3) ?? "1.0.0"}";
       RestoreWindowSettings();
       Closing += (_, _) => SaveWindowSettings();
       LoadHistory();
