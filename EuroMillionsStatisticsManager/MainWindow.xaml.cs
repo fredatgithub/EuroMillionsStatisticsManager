@@ -406,7 +406,7 @@ namespace EuroMillionsStatisticsManager
     private static List<BallStatistic> BuildBallStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[51];
-      var latestDraws = new DateTime?[51];
+      var drawDates = new SortedSet<DateTime>?[51];
       var drawCount = 0;
 
       foreach (var file in files)
@@ -446,20 +446,24 @@ namespace EuroMillionsStatisticsManager
           foreach (var ball in balls)
           {
             counts[ball]++;
-            if (drawDate.HasValue && (!latestDraws[ball].HasValue || drawDate > latestDraws[ball]))
-            {
-              latestDraws[ball] = drawDate;
-            }
+            drawDates[ball] = AddDrawDate(drawDates[ball], drawDate);
           }
         }
       }
 
       return Enumerable.Range(1, 50)
-          .Select(number => new BallStatistic(
-              number,
-              counts[number],
-              drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
-              latestDraws[number]))
+          .Select(number =>
+          {
+            var dates = GetRecentDrawDates(drawDates[number]);
+            return new BallStatistic(
+                number,
+                counts[number],
+                drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
+                dates.Latest,
+                dates.Previous,
+                dates.Third,
+                dates.Fourth);
+          })
           .ToList();
     }
 
@@ -473,7 +477,7 @@ namespace EuroMillionsStatisticsManager
     private static List<BallPairStatistic> BuildBallPairStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[51, 51];
-      var latestDraws = new DateTime?[51, 51];
+      var drawDates = new SortedSet<DateTime>?[51, 51];
       var drawCount = 0;
 
       foreach (var file in files)
@@ -518,10 +522,7 @@ namespace EuroMillionsStatisticsManager
             {
               var secondBall = orderedBalls[secondIndex];
               counts[firstBall, secondBall]++;
-              if (drawDate.HasValue && (!latestDraws[firstBall, secondBall].HasValue || drawDate > latestDraws[firstBall, secondBall]))
-              {
-                latestDraws[firstBall, secondBall] = drawDate;
-              }
+              drawDates[firstBall, secondBall] = AddDrawDate(drawDates[firstBall, secondBall], drawDate);
             }
           }
         }
@@ -529,18 +530,25 @@ namespace EuroMillionsStatisticsManager
 
       return Enumerable.Range(1, 49)
           .SelectMany(firstBall => Enumerable.Range(firstBall + 1, 50 - firstBall)
-              .Select(secondBall => new BallPairStatistic(
-                  $"{firstBall}-{secondBall}",
-                  counts[firstBall, secondBall],
-                  drawCount == 0 ? 0 : counts[firstBall, secondBall] * 100d / drawCount,
-                  latestDraws[firstBall, secondBall])))
+              .Select(secondBall =>
+              {
+                var dates = GetRecentDrawDates(drawDates[firstBall, secondBall]);
+                return new BallPairStatistic(
+                    $"{firstBall}-{secondBall}",
+                    counts[firstBall, secondBall],
+                    drawCount == 0 ? 0 : counts[firstBall, secondBall] * 100d / drawCount,
+                    dates.Latest,
+                    dates.Previous,
+                    dates.Third,
+                    dates.Fourth);
+              }))
           .ToList();
     }
 
     private static List<BallTripletStatistic> BuildBallTripletStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[51, 51, 51];
-      var latestDraws = new DateTime?[51, 51, 51];
+      var drawDates = new SortedSet<DateTime>?[51, 51, 51];
       var drawCount = 0;
 
       foreach (var file in files)
@@ -588,11 +596,9 @@ namespace EuroMillionsStatisticsManager
               {
                 var thirdBall = orderedBalls[thirdIndex];
                 counts[firstBall, secondBall, thirdBall]++;
-                if (drawDate.HasValue && (!latestDraws[firstBall, secondBall, thirdBall].HasValue
-                    || drawDate > latestDraws[firstBall, secondBall, thirdBall]))
-                {
-                  latestDraws[firstBall, secondBall, thirdBall] = drawDate;
-                }
+                drawDates[firstBall, secondBall, thirdBall] = AddDrawDate(
+                    drawDates[firstBall, secondBall, thirdBall],
+                    drawDate);
               }
             }
           }
@@ -602,11 +608,18 @@ namespace EuroMillionsStatisticsManager
       return Enumerable.Range(1, 48)
           .SelectMany(firstBall => Enumerable.Range(firstBall + 1, 49 - firstBall)
               .SelectMany(secondBall => Enumerable.Range(secondBall + 1, 50 - secondBall)
-                  .Select(thirdBall => new BallTripletStatistic(
-                      $"{firstBall}-{secondBall}-{thirdBall}",
-                      counts[firstBall, secondBall, thirdBall],
-                      drawCount == 0 ? 0 : counts[firstBall, secondBall, thirdBall] * 100d / drawCount,
-                      latestDraws[firstBall, secondBall, thirdBall]))))
+              .Select(thirdBall =>
+              {
+              var dates = GetRecentDrawDates(drawDates[firstBall, secondBall, thirdBall]);
+              return new BallTripletStatistic(
+                $"{firstBall}-{secondBall}-{thirdBall}",
+                counts[firstBall, secondBall, thirdBall],
+                drawCount == 0 ? 0 : counts[firstBall, secondBall, thirdBall] * 100d / drawCount,
+                dates.Latest,
+                dates.Previous,
+                dates.Third,
+                dates.Fourth);
+              })))
           .ToList();
     }
 
@@ -614,7 +627,7 @@ namespace EuroMillionsStatisticsManager
     {
       var statistics = new Dictionary<
           (int First, int Second, int Third, int Fourth),
-          (int Count, DateTime? LatestDraw)>();
+          BallQuadrupletAccumulator>();
       var drawCount = 0;
 
       foreach (var file in files)
@@ -665,14 +678,14 @@ namespace EuroMillionsStatisticsManager
                       orderedBalls[secondIndex],
                       orderedBalls[thirdIndex],
                       orderedBalls[fourthIndex]);
-                  statistics.TryGetValue(key, out var current);
-                  var latestDraw = current.LatestDraw;
-                  if (drawDate.HasValue && (!latestDraw.HasValue || drawDate > latestDraw))
+                  if (!statistics.TryGetValue(key, out var current))
                   {
-                    latestDraw = drawDate;
+                    current = new BallQuadrupletAccumulator();
+                    statistics.Add(key, current);
                   }
 
-                  statistics[key] = (current.Count + 1, latestDraw);
+                  current.Count++;
+                  current.DrawDates = AddDrawDate(current.DrawDates, drawDate);
                 }
               }
             }
@@ -685,11 +698,18 @@ namespace EuroMillionsStatisticsManager
           .ThenBy(entry => entry.Key.Second)
           .ThenBy(entry => entry.Key.Third)
           .ThenBy(entry => entry.Key.Fourth)
-          .Select(entry => new BallQuadrupletStatistic(
+            .Select(entry =>
+            {
+            var dates = GetRecentDrawDates(entry.Value.DrawDates);
+            return new BallQuadrupletStatistic(
               $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}",
               entry.Value.Count,
               drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
-              entry.Value.LatestDraw))
+              dates.Latest,
+              dates.Previous,
+              dates.Third,
+              dates.Fourth);
+            })
           .ToList();
     }
 
@@ -757,15 +777,15 @@ namespace EuroMillionsStatisticsManager
           .ThenBy(entry => entry.Key.Fifth)
             .Select(entry =>
             {
-            var recentDates = entry.Value.DrawDates.Reverse().Take(4).ToArray();
+            var dates = GetRecentDrawDates(entry.Value.DrawDates);
             return new BallQuintupletStatistic(
               $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}-{entry.Key.Fifth}",
               entry.Value.Count,
               drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
-              recentDates.Length > 0 ? recentDates[0] : null,
-              recentDates.Length > 1 ? recentDates[1] : null,
-              recentDates.Length > 2 ? recentDates[2] : null,
-              recentDates.Length > 3 ? recentDates[3] : null);
+              dates.Latest,
+              dates.Previous,
+              dates.Third,
+              dates.Fourth);
             })
           .ToList();
     }
@@ -773,7 +793,7 @@ namespace EuroMillionsStatisticsManager
     private static List<StarStatistic> BuildStarStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[13];
-      var latestDraws = new DateTime?[13];
+      var drawDates = new SortedSet<DateTime>?[13];
       var drawCount = 0;
 
       foreach (var file in files)
@@ -813,20 +833,24 @@ namespace EuroMillionsStatisticsManager
           foreach (var star in stars)
           {
             counts[star]++;
-            if (drawDate.HasValue && (!latestDraws[star].HasValue || drawDate > latestDraws[star]))
-            {
-              latestDraws[star] = drawDate;
-            }
+            drawDates[star] = AddDrawDate(drawDates[star], drawDate);
           }
         }
       }
 
       return Enumerable.Range(1, 12)
-          .Select(number => new StarStatistic(
-              number,
-              counts[number],
-              drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
-              latestDraws[number]))
+          .Select(number =>
+          {
+          var dates = GetRecentDrawDates(drawDates[number]);
+          return new StarStatistic(
+            number,
+            counts[number],
+            drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
+            dates.Latest,
+            dates.Previous,
+            dates.Third,
+            dates.Fourth);
+          })
           .ToList();
     }
 
@@ -840,7 +864,7 @@ namespace EuroMillionsStatisticsManager
     private static List<StarPairStatistic> BuildStarPairStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[13, 13];
-      var latestDraws = new DateTime?[13, 13];
+      var drawDates = new SortedSet<DateTime>?[13, 13];
       var drawCount = 0;
 
       foreach (var file in files)
@@ -879,20 +903,24 @@ namespace EuroMillionsStatisticsManager
               ? ParseDrawDate(fields[dateColumn])
               : null;
           counts[firstStar, secondStar]++;
-          if (drawDate.HasValue && (!latestDraws[firstStar, secondStar].HasValue || drawDate > latestDraws[firstStar, secondStar]))
-          {
-            latestDraws[firstStar, secondStar] = drawDate;
-          }
+          drawDates[firstStar, secondStar] = AddDrawDate(drawDates[firstStar, secondStar], drawDate);
         }
       }
 
       return Enumerable.Range(1, 11)
           .SelectMany(firstStar => Enumerable.Range(firstStar + 1, 12 - firstStar)
-              .Select(secondStar => new StarPairStatistic(
-                  $"{firstStar}-{secondStar}",
-                  counts[firstStar, secondStar],
-                  drawCount == 0 ? 0 : counts[firstStar, secondStar] * 100d / drawCount,
-                  latestDraws[firstStar, secondStar])))
+            .Select(secondStar =>
+            {
+            var dates = GetRecentDrawDates(drawDates[firstStar, secondStar]);
+            return new StarPairStatistic(
+              $"{firstStar}-{secondStar}",
+              counts[firstStar, secondStar],
+              drawCount == 0 ? 0 : counts[firstStar, secondStar] * 100d / drawCount,
+              dates.Latest,
+              dates.Previous,
+              dates.Third,
+              dates.Fourth);
+            }))
           .ToList();
     }
 
@@ -915,17 +943,80 @@ namespace EuroMillionsStatisticsManager
           : null;
     }
 
+    private static SortedSet<DateTime>? AddDrawDate(SortedSet<DateTime>? dates, DateTime? drawDate)
+    {
+      if (!drawDate.HasValue)
+      {
+        return dates;
+      }
+
+      dates ??= new SortedSet<DateTime>();
+      dates.Add(drawDate.Value);
+      return dates;
+    }
+
+    private static RecentDrawDates GetRecentDrawDates(SortedSet<DateTime>? dates)
+    {
+      var recentDates = dates?.Reverse().Take(4).ToArray() ?? [];
+      return new RecentDrawDates(
+          recentDates.Length > 0 ? recentDates[0] : null,
+          recentDates.Length > 1 ? recentDates[1] : null,
+          recentDates.Length > 2 ? recentDates[2] : null,
+          recentDates.Length > 3 ? recentDates[3] : null);
+    }
+
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
 
     private sealed record WindowSettings(double Left, double Top, double Width, double Height, bool IsMaximized);
 
-    private sealed record BallStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed record BallStatistic(
+      int Numero,
+      int NombreDeSorties,
+      double PourcentageDeSortie,
+      DateTime? DerniereSortie,
+      DateTime? AvantDerniereSortie,
+      DateTime? AvantAvantDerniereSortie,
+      DateTime? QuatriemeDerniereSortie);
 
-    private sealed record BallPairStatistic(string Paire, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed record BallPairStatistic(
+      string Paire,
+      int NombreDeSorties,
+      double PourcentageDeSortie,
+      DateTime? DerniereSortie,
+      DateTime? AvantDerniereSortie,
+      DateTime? AvantAvantDerniereSortie,
+      DateTime? QuatriemeDerniereSortie);
 
-    private sealed record BallTripletStatistic(string Triplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed record BallTripletStatistic(
+      string Triplet,
+      int NombreDeSorties,
+      double PourcentageDeSortie,
+      DateTime? DerniereSortie,
+      DateTime? AvantDerniereSortie,
+      DateTime? AvantAvantDerniereSortie,
+      DateTime? QuatriemeDerniereSortie);
 
-    private sealed record BallQuadrupletStatistic(string Quadruplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed record BallQuadrupletStatistic(
+      string Quadruplet,
+      int NombreDeSorties,
+      double PourcentageDeSortie,
+      DateTime? DerniereSortie,
+      DateTime? AvantDerniereSortie,
+      DateTime? AvantAvantDerniereSortie,
+      DateTime? QuatriemeDerniereSortie);
+
+    private sealed record RecentDrawDates(
+      DateTime? Latest,
+      DateTime? Previous,
+      DateTime? Third,
+      DateTime? Fourth);
+
+    private sealed class BallQuadrupletAccumulator
+    {
+      public int Count { get; set; }
+
+      public SortedSet<DateTime>? DrawDates { get; set; }
+    }
 
     private sealed class BallQuintupletAccumulator
     {
@@ -943,8 +1034,22 @@ namespace EuroMillionsStatisticsManager
         DateTime? AvantAvantDerniereSortie,
         DateTime? QuatriemeDerniereSortie);
 
-    private sealed record StarStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed record StarStatistic(
+      int Numero,
+      int NombreDeSorties,
+      double PourcentageDeSortie,
+      DateTime? DerniereSortie,
+      DateTime? AvantDerniereSortie,
+      DateTime? AvantAvantDerniereSortie,
+      DateTime? QuatriemeDerniereSortie);
 
-    private sealed record StarPairStatistic(string Couple, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed record StarPairStatistic(
+      string Couple,
+      int NombreDeSorties,
+      double PourcentageDeSortie,
+      DateTime? DerniereSortie,
+      DateTime? AvantDerniereSortie,
+      DateTime? AvantAvantDerniereSortie,
+      DateTime? QuatriemeDerniereSortie);
   }
 }
