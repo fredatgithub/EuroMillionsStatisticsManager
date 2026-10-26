@@ -164,6 +164,7 @@ namespace EuroMillionsStatisticsManager
       StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(importedFiles);
       StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(importedFiles);
       StatistiquesQuadrupletsBoules.ItemsSource = BuildBallQuadrupletStatistics(importedFiles);
+      StatistiquesQuintupletsBoules.ItemsSource = BuildBallQuintupletStatistics(importedFiles);
       StatistiquesEtoiles.ItemsSource = BuildStarStatistics(importedFiles);
       StatistiquesPairesEtoiles.ItemsSource = BuildStarPairStatistics(importedFiles);
       StatusText.Text = $"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s).";
@@ -611,6 +612,73 @@ namespace EuroMillionsStatisticsManager
           .ToList();
     }
 
+    private static List<BallQuintupletStatistic> BuildBallQuintupletStatistics(IEnumerable<CsvFileData> files)
+    {
+      var statistics = new Dictionary<
+          (int First, int Second, int Third, int Fourth, int Fifth),
+          (int Count, DateTime? LatestDraw)>();
+      var drawCount = 0;
+
+      foreach (var file in files)
+      {
+        var ballColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsBallHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        if (ballColumns.Length != 5)
+        {
+          continue;
+        }
+
+        var dateColumn = Array.FindIndex(file.Headers, IsDateHeader);
+        foreach (var fields in file.Rows)
+        {
+          var balls = new HashSet<int>();
+          foreach (var column in ballColumns)
+          {
+            if (column < fields.Length && int.TryParse(fields[column], out var number) && number is >= 1 and <= 50)
+            {
+              balls.Add(number);
+            }
+          }
+
+          if (balls.Count != 5)
+          {
+            continue;
+          }
+
+          drawCount++;
+          var orderedBalls = balls.Order().ToArray();
+          var key = (orderedBalls[0], orderedBalls[1], orderedBalls[2], orderedBalls[3], orderedBalls[4]);
+          statistics.TryGetValue(key, out var current);
+          DateTime? drawDate = dateColumn >= 0 && dateColumn < fields.Length
+              ? ParseDrawDate(fields[dateColumn])
+              : null;
+          var latestDraw = current.LatestDraw;
+          if (drawDate.HasValue && (!latestDraw.HasValue || drawDate > latestDraw))
+          {
+            latestDraw = drawDate;
+          }
+
+          statistics[key] = (current.Count + 1, latestDraw);
+        }
+      }
+
+      return statistics
+          .OrderBy(entry => entry.Key.First)
+          .ThenBy(entry => entry.Key.Second)
+          .ThenBy(entry => entry.Key.Third)
+          .ThenBy(entry => entry.Key.Fourth)
+          .ThenBy(entry => entry.Key.Fifth)
+          .Select(entry => new BallQuintupletStatistic(
+              $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}-{entry.Key.Fifth}",
+              entry.Value.Count,
+              drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
+              entry.Value.LatestDraw))
+          .ToList();
+    }
+
     private static List<StarStatistic> BuildStarStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[13];
@@ -767,6 +835,8 @@ namespace EuroMillionsStatisticsManager
     private sealed record BallTripletStatistic(string Triplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
     private sealed record BallQuadrupletStatistic(string Quadruplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+
+    private sealed record BallQuintupletStatistic(string Quintuplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
     private sealed record StarStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
