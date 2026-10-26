@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using Microsoft.VisualBasic.FileIO;
 
@@ -10,11 +11,94 @@ namespace EuroMillionsStatisticsManager
   public partial class MainWindow: Window
   {
     private readonly string archivesDirectory = Path.Combine(AppContext.BaseDirectory, "Archives");
+    private readonly string windowSettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "EuroMillionsStatisticsManager",
+        "window-settings.json");
 
     public MainWindow()
     {
       InitializeComponent();
+      RestoreWindowSettings();
+      Closed += (_, _) => SaveWindowSettings();
       LoadHistory();
+    }
+
+    private void RestoreWindowSettings()
+    {
+      try
+      {
+        if (!File.Exists(windowSettingsPath))
+        {
+          return;
+        }
+
+        var settings = JsonSerializer.Deserialize<WindowSettings>(File.ReadAllText(windowSettingsPath));
+        if (settings is null
+            || !double.IsFinite(settings.Left)
+            || !double.IsFinite(settings.Top)
+            || !double.IsFinite(settings.Width)
+            || !double.IsFinite(settings.Height)
+            || settings.Width < MinWidth
+            || settings.Height < MinHeight)
+        {
+          return;
+        }
+
+        var bounds = new Rect(settings.Left, settings.Top, settings.Width, settings.Height);
+        var virtualScreen = new Rect(
+            SystemParameters.VirtualScreenLeft,
+            SystemParameters.VirtualScreenTop,
+            SystemParameters.VirtualScreenWidth,
+            SystemParameters.VirtualScreenHeight);
+        var visibleWidth = Math.Min(bounds.Right, virtualScreen.Right) - Math.Max(bounds.Left, virtualScreen.Left);
+        var visibleHeight = Math.Min(bounds.Bottom, virtualScreen.Bottom) - Math.Max(bounds.Top, virtualScreen.Top);
+        if (visibleWidth < 100 || visibleHeight < 100)
+        {
+          return;
+        }
+
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = settings.Left;
+        Top = settings.Top;
+        Width = settings.Width;
+        Height = settings.Height;
+        WindowState = settings.IsMaximized ? WindowState.Maximized : WindowState.Normal;
+      }
+      catch (IOException)
+      {
+      }
+      catch (UnauthorizedAccessException)
+      {
+      }
+      catch (JsonException)
+      {
+      }
+    }
+
+    private void SaveWindowSettings()
+    {
+      var bounds = WindowState == WindowState.Normal
+          ? new Rect(Left, Top, Width, Height)
+          : RestoreBounds;
+      var settings = new WindowSettings(
+          bounds.Left,
+          bounds.Top,
+          bounds.Width,
+          bounds.Height,
+          WindowState == WindowState.Maximized);
+
+      try
+      {
+        Directory.CreateDirectory(Path.GetDirectoryName(windowSettingsPath)!);
+        File.WriteAllText(windowSettingsPath, JsonSerializer.Serialize(settings));
+      }
+      catch (IOException)
+      {
+      }
+      catch (UnauthorizedAccessException)
+      {
+      }
     }
 
     private void LoadHistory()
@@ -368,8 +452,8 @@ namespace EuroMillionsStatisticsManager
 
     private static List<StarPairStatistic> BuildStarPairStatistics(IEnumerable<CsvFileData> files)
     {
-      var counts = new int[12];
-      var latestDraws = new DateTime?[12];
+      var counts = new int[13, 13];
+      var latestDraws = new DateTime?[13, 13];
       var drawCount = 0;
 
       foreach (var file in files)
@@ -404,28 +488,24 @@ namespace EuroMillionsStatisticsManager
           drawCount++;
           var firstStar = stars.Min();
           var secondStar = stars.Max();
-          if (secondStar != firstStar + 1)
-          {
-            continue;
-          }
-
           DateTime? drawDate = dateColumn >= 0 && dateColumn < fields.Length
               ? ParseDrawDate(fields[dateColumn])
               : null;
-          counts[firstStar]++;
-          if (drawDate.HasValue && (!latestDraws[firstStar].HasValue || drawDate > latestDraws[firstStar]))
+          counts[firstStar, secondStar]++;
+          if (drawDate.HasValue && (!latestDraws[firstStar, secondStar].HasValue || drawDate > latestDraws[firstStar, secondStar]))
           {
-            latestDraws[firstStar] = drawDate;
+            latestDraws[firstStar, secondStar] = drawDate;
           }
         }
       }
 
       return Enumerable.Range(1, 11)
-          .Select(firstStar => new StarPairStatistic(
-              $"{firstStar}-{firstStar + 1}",
-              counts[firstStar],
-              drawCount == 0 ? 0 : counts[firstStar] * 100d / drawCount,
-              latestDraws[firstStar]))
+          .SelectMany(firstStar => Enumerable.Range(firstStar + 1, 12 - firstStar)
+              .Select(secondStar => new StarPairStatistic(
+                  $"{firstStar}-{secondStar}",
+                  counts[firstStar, secondStar],
+                  drawCount == 0 ? 0 : counts[firstStar, secondStar] * 100d / drawCount,
+                  latestDraws[firstStar, secondStar])))
           .ToList();
     }
 
@@ -449,6 +529,8 @@ namespace EuroMillionsStatisticsManager
     }
 
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
+
+    private sealed record WindowSettings(double Left, double Top, double Width, double Height, bool IsMaximized);
 
     private sealed record BallStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
