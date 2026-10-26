@@ -616,7 +616,7 @@ namespace EuroMillionsStatisticsManager
     {
       var statistics = new Dictionary<
           (int First, int Second, int Third, int Fourth, int Fifth),
-          (int Count, DateTime? LatestDraw)>();
+          BallQuintupletAccumulator>();
       var drawCount = 0;
 
       foreach (var file in files)
@@ -651,17 +651,20 @@ namespace EuroMillionsStatisticsManager
           drawCount++;
           var orderedBalls = balls.Order().ToArray();
           var key = (orderedBalls[0], orderedBalls[1], orderedBalls[2], orderedBalls[3], orderedBalls[4]);
-          statistics.TryGetValue(key, out var current);
+          if (!statistics.TryGetValue(key, out var current))
+          {
+            current = new BallQuintupletAccumulator();
+            statistics.Add(key, current);
+          }
+
+          current.Count++;
           DateTime? drawDate = dateColumn >= 0 && dateColumn < fields.Length
               ? ParseDrawDate(fields[dateColumn])
               : null;
-          var latestDraw = current.LatestDraw;
-          if (drawDate.HasValue && (!latestDraw.HasValue || drawDate > latestDraw))
+          if (drawDate.HasValue)
           {
-            latestDraw = drawDate;
+            current.DrawDates.Add(drawDate.Value);
           }
-
-          statistics[key] = (current.Count + 1, latestDraw);
         }
       }
 
@@ -671,11 +674,18 @@ namespace EuroMillionsStatisticsManager
           .ThenBy(entry => entry.Key.Third)
           .ThenBy(entry => entry.Key.Fourth)
           .ThenBy(entry => entry.Key.Fifth)
-          .Select(entry => new BallQuintupletStatistic(
+            .Select(entry =>
+            {
+            var recentDates = entry.Value.DrawDates.Reverse().Take(4).ToArray();
+            return new BallQuintupletStatistic(
               $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}-{entry.Key.Fifth}",
               entry.Value.Count,
               drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
-              entry.Value.LatestDraw))
+              recentDates.Length > 0 ? recentDates[0] : null,
+              recentDates.Length > 1 ? recentDates[1] : null,
+              recentDates.Length > 2 ? recentDates[2] : null,
+              recentDates.Length > 3 ? recentDates[3] : null);
+            })
           .ToList();
     }
 
@@ -836,7 +846,21 @@ namespace EuroMillionsStatisticsManager
 
     private sealed record BallQuadrupletStatistic(string Quadruplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
-    private sealed record BallQuintupletStatistic(string Quintuplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+    private sealed class BallQuintupletAccumulator
+    {
+      public int Count { get; set; }
+
+      public SortedSet<DateTime> DrawDates { get; } = new();
+    }
+
+    private sealed record BallQuintupletStatistic(
+        string Quintuplet,
+        int NombreDeSorties,
+        double PourcentageDeSortie,
+        DateTime? DerniereSortie,
+        DateTime? AvantDerniereSortie,
+        DateTime? AvantAvantDerniereSortie,
+        DateTime? QuatriemeDerniereSortie);
 
     private sealed record StarStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
