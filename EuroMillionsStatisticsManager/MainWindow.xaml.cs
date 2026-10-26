@@ -76,6 +76,7 @@ namespace EuroMillionsStatisticsManager
       Historique.ItemsSource = history.DefaultView;
       Statistiques.ItemsSource = BuildBallStatistics(importedFiles);
       StatistiquesEtoiles.ItemsSource = BuildStarStatistics(importedFiles);
+      StatistiquesPairesEtoiles.ItemsSource = BuildStarPairStatistics(importedFiles);
       StatusText.Text = $"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s).";
 
       if (errors.Count > 0)
@@ -365,6 +366,69 @@ namespace EuroMillionsStatisticsManager
           : header.Length == 2 && (header[0] == 'E' || header[0] == 'e') && header[1] is '1' or '2';
     }
 
+    private static List<StarPairStatistic> BuildStarPairStatistics(IEnumerable<CsvFileData> files)
+    {
+      var counts = new int[12];
+      var latestDraws = new DateTime?[12];
+      var drawCount = 0;
+
+      foreach (var file in files)
+      {
+        var starColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsStarHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        if (starColumns.Length != 2)
+        {
+          continue;
+        }
+
+        var dateColumn = Array.FindIndex(file.Headers, IsDateHeader);
+        foreach (var fields in file.Rows)
+        {
+          var stars = new HashSet<int>();
+          foreach (var column in starColumns)
+          {
+            if (column < fields.Length && int.TryParse(fields[column], out var number) && number is >= 1 and <= 12)
+            {
+              stars.Add(number);
+            }
+          }
+
+          if (stars.Count != 2)
+          {
+            continue;
+          }
+
+          drawCount++;
+          var firstStar = stars.Min();
+          var secondStar = stars.Max();
+          if (secondStar != firstStar + 1)
+          {
+            continue;
+          }
+
+          DateTime? drawDate = dateColumn >= 0 && dateColumn < fields.Length
+              ? ParseDrawDate(fields[dateColumn])
+              : null;
+          counts[firstStar]++;
+          if (drawDate.HasValue && (!latestDraws[firstStar].HasValue || drawDate > latestDraws[firstStar]))
+          {
+            latestDraws[firstStar] = drawDate;
+          }
+        }
+      }
+
+      return Enumerable.Range(1, 11)
+          .Select(firstStar => new StarPairStatistic(
+              $"{firstStar}-{firstStar + 1}",
+              counts[firstStar],
+              drawCount == 0 ? 0 : counts[firstStar] * 100d / drawCount,
+              latestDraws[firstStar]))
+          .ToList();
+    }
+
     private static bool IsDateHeader(string header)
     {
       return string.Equals(header, "date_de_tirage", StringComparison.OrdinalIgnoreCase)
@@ -389,5 +453,7 @@ namespace EuroMillionsStatisticsManager
     private sealed record BallStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
     private sealed record StarStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+
+    private sealed record StarPairStatistic(string Couple, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
   }
 }
