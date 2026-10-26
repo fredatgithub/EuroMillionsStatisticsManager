@@ -162,6 +162,7 @@ namespace EuroMillionsStatisticsManager
       Historique.ItemsSource = history.DefaultView;
       Statistiques.ItemsSource = BuildBallStatistics(importedFiles);
       StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(importedFiles);
+      StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(importedFiles);
       StatistiquesEtoiles.ItemsSource = BuildStarStatistics(importedFiles);
       StatistiquesPairesEtoiles.ItemsSource = BuildStarPairStatistics(importedFiles);
       StatusText.Text = $"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s).";
@@ -453,6 +454,79 @@ namespace EuroMillionsStatisticsManager
           .ToList();
     }
 
+    private static List<BallTripletStatistic> BuildBallTripletStatistics(IEnumerable<CsvFileData> files)
+    {
+      var counts = new int[51, 51, 51];
+      var latestDraws = new DateTime?[51, 51, 51];
+      var drawCount = 0;
+
+      foreach (var file in files)
+      {
+        var ballColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsBallHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        if (ballColumns.Length != 5)
+        {
+          continue;
+        }
+
+        var dateColumn = Array.FindIndex(file.Headers, IsDateHeader);
+        foreach (var fields in file.Rows)
+        {
+          var balls = new HashSet<int>();
+          foreach (var column in ballColumns)
+          {
+            if (column < fields.Length && int.TryParse(fields[column], out var number) && number is >= 1 and <= 50)
+            {
+              balls.Add(number);
+            }
+          }
+
+          if (balls.Count != 5)
+          {
+            continue;
+          }
+
+          drawCount++;
+          var orderedBalls = balls.Order().ToArray();
+          DateTime? drawDate = dateColumn >= 0 && dateColumn < fields.Length
+              ? ParseDrawDate(fields[dateColumn])
+              : null;
+
+          for (var firstIndex = 0; firstIndex < orderedBalls.Length - 2; firstIndex++)
+          {
+            var firstBall = orderedBalls[firstIndex];
+            for (var secondIndex = firstIndex + 1; secondIndex < orderedBalls.Length - 1; secondIndex++)
+            {
+              var secondBall = orderedBalls[secondIndex];
+              for (var thirdIndex = secondIndex + 1; thirdIndex < orderedBalls.Length; thirdIndex++)
+              {
+                var thirdBall = orderedBalls[thirdIndex];
+                counts[firstBall, secondBall, thirdBall]++;
+                if (drawDate.HasValue && (!latestDraws[firstBall, secondBall, thirdBall].HasValue
+                    || drawDate > latestDraws[firstBall, secondBall, thirdBall]))
+                {
+                  latestDraws[firstBall, secondBall, thirdBall] = drawDate;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return Enumerable.Range(1, 48)
+          .SelectMany(firstBall => Enumerable.Range(firstBall + 1, 49 - firstBall)
+              .SelectMany(secondBall => Enumerable.Range(secondBall + 1, 50 - secondBall)
+                  .Select(thirdBall => new BallTripletStatistic(
+                      $"{firstBall}-{secondBall}-{thirdBall}",
+                      counts[firstBall, secondBall, thirdBall],
+                      drawCount == 0 ? 0 : counts[firstBall, secondBall, thirdBall] * 100d / drawCount,
+                      latestDraws[firstBall, secondBall, thirdBall]))))
+          .ToList();
+    }
+
     private static List<StarStatistic> BuildStarStatistics(IEnumerable<CsvFileData> files)
     {
       var counts = new int[13];
@@ -605,6 +679,8 @@ namespace EuroMillionsStatisticsManager
     private sealed record BallStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
     private sealed record BallPairStatistic(string Paire, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
+
+    private sealed record BallTripletStatistic(string Triplet, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
     private sealed record StarStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
 
