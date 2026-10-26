@@ -26,6 +26,21 @@
                           EnableRowVirtualization="True"
                           EnableColumnVirtualization="True" />
             </TabItem>
+            <TabItem Header="Boules">
+                <DataGrid x:Name="Statistiques"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          ItemsSource="{Binding}"
+                          EnableRowVirtualization="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Numéro de la boule" Binding="{Binding Numero}" />
+                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
         </TabControl>
 
         <StatusBar Grid.Row="1">

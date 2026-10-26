@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -73,6 +74,7 @@ namespace EuroMillionsStatisticsManager
 
       var history = BuildHistoryTable(importedFiles);
       Historique.ItemsSource = history.DefaultView;
+      Statistiques.ItemsSource = BuildBallStatistics(importedFiles);
       StatusText.Text = $"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s).";
 
       if (errors.Count > 0)
@@ -228,6 +230,94 @@ namespace EuroMillionsStatisticsManager
       return history;
     }
 
+    private static List<BallStatistic> BuildBallStatistics(IEnumerable<CsvFileData> files)
+    {
+      var counts = new int[51];
+      var latestDraws = new DateTime?[51];
+      var drawCount = 0;
+
+      foreach (var file in files)
+      {
+        var ballColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsBallHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        if (ballColumns.Length != 5)
+        {
+          continue;
+        }
+
+        var dateColumn = Array.FindIndex(file.Headers, IsDateHeader);
+        foreach (var fields in file.Rows)
+        {
+          var balls = new HashSet<int>();
+          foreach (var column in ballColumns)
+          {
+            if (column < fields.Length && int.TryParse(fields[column], out var number) && number is >= 1 and <= 50)
+            {
+              balls.Add(number);
+            }
+          }
+
+          if (balls.Count != 5)
+          {
+            continue;
+          }
+
+          drawCount++;
+          DateTime? drawDate = dateColumn >= 0 && dateColumn < fields.Length
+              ? ParseDrawDate(fields[dateColumn])
+              : null;
+
+          foreach (var ball in balls)
+          {
+            counts[ball]++;
+            if (drawDate.HasValue && (!latestDraws[ball].HasValue || drawDate > latestDraws[ball]))
+            {
+              latestDraws[ball] = drawDate;
+            }
+          }
+        }
+      }
+
+      return Enumerable.Range(1, 50)
+          .Select(number => new BallStatistic(
+              number,
+              counts[number],
+              drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
+              latestDraws[number]))
+          .ToList();
+    }
+
+    private static bool IsBallHeader(string header)
+    {
+      return header.StartsWith("boule_", StringComparison.OrdinalIgnoreCase)
+          ? int.TryParse(header.AsSpan("boule_".Length), out var position) && position is >= 1 and <= 5
+          : header.Length == 2 && (header[0] == 'N' || header[0] == 'n') && header[1] is >= '1' and <= '5';
+    }
+
+    private static bool IsDateHeader(string header)
+    {
+      return string.Equals(header, "date_de_tirage", StringComparison.OrdinalIgnoreCase)
+          || string.Equals(header, "DATE", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static DateTime? ParseDrawDate(string value)
+    {
+      string[] formats = ["dd/MM/yyyy", "yyyyMMdd", "yyyy-MM-dd", "dd-MM-yyyy", "MM/dd/yyyy"];
+      return DateTime.TryParseExact(
+          value.Trim(),
+          formats,
+          CultureInfo.InvariantCulture,
+          DateTimeStyles.None,
+          out var date)
+          ? date
+          : null;
+    }
+
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
+
+    private sealed record BallStatistic(int Numero, int NombreDeSorties, double PourcentageDeSortie, DateTime? DerniereSortie);
   }
 }
