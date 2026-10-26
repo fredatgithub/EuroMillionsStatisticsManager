@@ -20,7 +20,7 @@ namespace EuroMillionsStatisticsManager
     {
       InitializeComponent();
       RestoreWindowSettings();
-      Closed += (_, _) => SaveWindowSettings();
+      Closing += (_, _) => SaveWindowSettings();
       LoadHistory();
     }
 
