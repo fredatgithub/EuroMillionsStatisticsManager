@@ -38,6 +38,9 @@
                         <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
                         <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
                         <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -53,6 +56,9 @@
                         <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
                         <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
                         <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -68,7 +74,10 @@
                         <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
                         <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
                         <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        </DataGrid.Columns>
+                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                    </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
             <TabItem Header="4 boules">
@@ -83,6 +92,9 @@
                         <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
                         <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
                         <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -116,6 +128,9 @@
                         <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
                         <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
                         <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -131,6 +146,9 @@
                         <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
                         <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
                         <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>

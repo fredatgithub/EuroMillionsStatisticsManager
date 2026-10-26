@@ -158,16 +158,21 @@ namespace EuroMillionsStatisticsManager
         }
       }
 
-      var history = BuildHistoryTable(importedFiles);
+      var (distinctFiles, duplicateCount) = RemoveDuplicateDraws(importedFiles);
+      var history = BuildHistoryTable(distinctFiles);
       Historique.ItemsSource = history.DefaultView;
-      Statistiques.ItemsSource = BuildBallStatistics(importedFiles);
-      StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(importedFiles);
-      StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(importedFiles);
-      StatistiquesQuadrupletsBoules.ItemsSource = BuildBallQuadrupletStatistics(importedFiles);
-      StatistiquesQuintupletsBoules.ItemsSource = BuildBallQuintupletStatistics(importedFiles);
-      StatistiquesEtoiles.ItemsSource = BuildStarStatistics(importedFiles);
-      StatistiquesPairesEtoiles.ItemsSource = BuildStarPairStatistics(importedFiles);
+      Statistiques.ItemsSource = BuildBallStatistics(distinctFiles);
+      StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(distinctFiles);
+      StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(distinctFiles);
+      StatistiquesQuadrupletsBoules.ItemsSource = BuildBallQuadrupletStatistics(distinctFiles);
+      StatistiquesQuintupletsBoules.ItemsSource = BuildBallQuintupletStatistics(distinctFiles);
+      StatistiquesEtoiles.ItemsSource = BuildStarStatistics(distinctFiles);
+      StatistiquesPairesEtoiles.ItemsSource = BuildStarPairStatistics(distinctFiles);
       StatusText.Text = $"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s).";
+      if (duplicateCount > 0)
+      {
+        StatusText.Text += $" {duplicateCount} doublon(s) ignoré(s).";
+      }
 
       if (errors.Count > 0)
       {
@@ -285,6 +290,82 @@ namespace EuroMillionsStatisticsManager
       }
 
       return normalizedHeaders;
+    }
+
+    private static (List<CsvFileData> Files, int DuplicateCount) RemoveDuplicateDraws(IEnumerable<CsvFileData> files)
+    {
+      var seenDraws = new HashSet<string>(StringComparer.Ordinal);
+      var distinctFiles = new List<CsvFileData>();
+      var duplicateCount = 0;
+
+      foreach (var file in files)
+      {
+        var ballColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsBallHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        var starColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsStarHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        var dateColumn = Array.FindIndex(file.Headers, IsDateHeader);
+
+        if (ballColumns.Length != 5 || starColumns.Length != 2 || dateColumn < 0)
+        {
+          distinctFiles.Add(file);
+          continue;
+        }
+
+        var distinctRows = new List<string[]>();
+        foreach (var fields in file.Rows)
+        {
+          if (dateColumn >= fields.Length || ParseDrawDate(fields[dateColumn]) is not DateTime drawDate)
+          {
+            distinctRows.Add(fields);
+            continue;
+          }
+
+          var balls = new HashSet<int>();
+          foreach (var column in ballColumns)
+          {
+            if (column < fields.Length && int.TryParse(fields[column], out var number) && number is >= 1 and <= 50)
+            {
+              balls.Add(number);
+            }
+          }
+
+          var stars = new HashSet<int>();
+          foreach (var column in starColumns)
+          {
+            if (column < fields.Length && int.TryParse(fields[column], out var number) && number is >= 1 and <= 12)
+            {
+              stars.Add(number);
+            }
+          }
+
+          if (balls.Count != 5 || stars.Count != 2)
+          {
+            distinctRows.Add(fields);
+            continue;
+          }
+
+          var drawKey = $"{drawDate:yyyyMMdd}|{string.Join('-', balls.Order())}|{string.Join('-', stars.Order())}";
+          if (seenDraws.Add(drawKey))
+          {
+            distinctRows.Add(fields);
+          }
+          else
+          {
+            duplicateCount++;
+          }
+        }
+
+        distinctFiles.Add(file with { Rows = distinctRows });
+      }
+
+      return (distinctFiles, duplicateCount);
     }
 
     private static DataTable BuildHistoryTable(IEnumerable<CsvFileData> files)
