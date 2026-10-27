@@ -215,7 +215,8 @@
           <Border Background="#FFFFDBB8" Padding="18">
             <Grid>
               <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="28" />
                 <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
@@ -231,14 +232,14 @@
                 <TextBlock x:Name="EstimationStatus" VerticalAlignment="Center" Margin="18,0,0,0" />
               </StackPanel>
 
-              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,28,12">
-                <TextBlock x:Name="BallSelectionCount" Text="0 boule sur 5 sélectionnée(s)" FontWeight="Bold" Margin="0,0,0,8" />
+              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
+                <TextBlock x:Name="BallSelectionCount" Text="0 boule sur 5 sélectionnées" FontWeight="Bold" Margin="0,0,0,8" />
                 <TextBlock Text="Boules" FontWeight="Bold" Margin="0,0,0,8" />
                 <UniformGrid x:Name="BallNumberPanel" Columns="10" />
               </StackPanel>
 
-              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
-                <TextBlock x:Name="StarSelectionCount" Text="0 étoile sur 2 sélectionnée(s)" FontWeight="Bold" Margin="0,0,0,8" />
+              <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+                <TextBlock x:Name="StarSelectionCount" Text="0 étoile sur 2 sélectionnées" FontWeight="Bold" Margin="0,0,0,8" />
                 <TextBlock Text="Étoiles" FontWeight="Bold" Margin="0,0,0,8" />
                 <UniformGrid x:Name="StarNumberPanel" Columns="3" />
               </StackPanel>

@@ -83,6 +83,7 @@ namespace EuroMillionsStatisticsManager
         Content = number.ToString(CultureInfo.InvariantCulture),
         Tag = number,
         MinWidth = 30,
+        MaxWidth = 30,
         Padding = new Thickness(2, 1, 2, 1),
         Margin = new Thickness(2),
         FontWeight = FontWeights.Bold,
