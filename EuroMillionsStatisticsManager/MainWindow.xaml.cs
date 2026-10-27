@@ -509,24 +509,29 @@ namespace EuroMillionsStatisticsManager
       StatistiquesQuintupletsBoules.ItemsSource = result.BallQuintupletStatistics;
       StatistiquesEtoiles.ItemsSource = result.StarStatistics;
       StatistiquesPairesEtoiles.ItemsSource = result.StarPairStatistics;
-      StatusText.Text = $"{result.History.Rows.Count} tirage(s) chargé(s) depuis {result.ImportedFileCount} fichier(s).";
+      StatusText.Text = $"{result.History.Rows.Count} tirage{Pluralize(result.History.Rows.Count)} chargé{Pluralize(result.History.Rows.Count)} depuis {result.ImportedFileCount} fichier{Pluralize(result.ImportedFileCount)}.";
       if (result.DuplicateCount > 0)
       {
-        StatusText.Text += $" {result.DuplicateCount} doublon(s) ignoré(s).";
-        LogAction($"{result.DuplicateCount} doublon(s) ignoré(s).");
+        StatusText.Text += $" {result.DuplicateCount} doublon{Pluralize(result.DuplicateCount)} ignoré{Pluralize(result.DuplicateCount)}.";
+        LogAction($"{result.DuplicateCount} doublon{Pluralize(result.DuplicateCount)} ignoré{Pluralize(result.DuplicateCount)}.");
       }
 
-      LogAction($"{result.History.Rows.Count} tirage(s) chargé(s) depuis {result.ImportedFileCount} fichier(s) CSV.");
+      LogAction($"{result.History.Rows.Count} tirage{Pluralize(result.History.Rows.Count)} chargé{Pluralize(result.History.Rows.Count)} depuis {result.ImportedFileCount} fichier{Pluralize(result.ImportedFileCount)} CSV.");
       if (result.Errors.Count > 0)
       {
-        StatusText.Text += $" {result.Errors.Count} fichier(s) n’ont pas pu être importés.";
-        LogAction($"Chargement terminé avec {result.Errors.Count} erreur(s).");
+        StatusText.Text += $" {result.Errors.Count} fichier{Pluralize(result.Errors.Count)} n’ont pas pu être importés.";
+        LogAction($"Chargement terminé avec {result.Errors.Count} erreur{Pluralize(result.Errors.Count)}.");
         MessageBox.Show(
             string.Join(Environment.NewLine, result.Errors),
             "Erreurs de chargement des archives",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
       }
+    }
+
+    private static string Pluralize(int count)
+    {
+      return count == 1 ? string.Empty : "s";
     }
 
     private HistoryLoadResult PrepareHistoryData()
