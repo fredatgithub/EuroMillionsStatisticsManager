@@ -166,13 +166,27 @@
           </DataGrid.Columns>
         </DataGrid>
       </TabItem>
+      <TabItem Header="PoidsBoulesStatistiques">
+        <DataGrid x:Name="PoidsBoulesStatistiques"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  EnableRowVirtualization="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Poids du tirage" Binding="{Binding Weight}" />
+            <DataGridTextColumn Header="Nombre de tirages" Binding="{Binding Count}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
       <TabItem Header="GraphiquePoids">
         <Canvas x:Name="GraphiquePoidsCanvas"
                 Background="White"
                 SizeChanged="GraphiquePoidsCanvas_SizeChanged" />
       </TabItem>
       <TabItem Header="GraphiquePoidsEtoiles">
-
+        <Canvas x:Name="GraphiquePoidsEtoilesCanvas"
+                Background="White"
+                SizeChanged="GraphiquePoidsEtoilesCanvas_SizeChanged" />
       </TabItem>
       <TabItem Header="Estimation">
 
