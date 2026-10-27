@@ -696,7 +696,7 @@ namespace EuroMillionsStatisticsManager
         AddChartText(canvas, count.ToString(CultureInfo.InvariantCulture), 18, y - 9, 36, TextAlignment.Right);
       }
 
-      const int xTickCount = 5;
+      const int xTickCount = 20;
       for (var tick = 0; tick <= xTickCount; tick++)
       {
         var weight = minimumWeight + (maximumWeight - minimumWeight) * tick / xTickCount;
