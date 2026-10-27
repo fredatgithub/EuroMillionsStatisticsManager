@@ -11,13 +11,11 @@ namespace EuroMillionsStatisticsManager
   public partial class MainWindow: Window
   {
     private readonly string archivesDirectory = Path.Combine(AppContext.BaseDirectory, "Archives");
-    private readonly string logFilePath = Path.Combine(
-        AppContext.BaseDirectory,
-        $"EuroMillionsStatisticsManager-{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture)}.log");
-    private readonly string windowSettingsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "EuroMillionsStatisticsManager",
-        "window-settings.json");
+
+    private readonly string logFilePath = Path.Combine(AppContext.BaseDirectory, $"EuroMillionsStatisticsManager-{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture)}.log");
+
+    private readonly string windowSettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EuroMillionsStatisticsManager", "window-settings.json");
+
     private bool logFileAvailable;
     private bool logWriteErrorReported;
 
@@ -34,6 +32,7 @@ namespace EuroMillionsStatisticsManager
         LogAction("Fermeture de l’application.");
         SaveWindowSettings();
       };
+
       LoadHistory();
     }
 
@@ -89,8 +88,7 @@ namespace EuroMillionsStatisticsManager
       }
 
       logWriteErrorReported = true;
-      MessageBox.Show(
-          $"Le fichier journal n’a pas pu être créé ou mis à jour :{Environment.NewLine}{message}",
+      MessageBox.Show($"Le fichier journal n’a pas pu être créé ou mis à jour :{Environment.NewLine}{message}",
           "Erreur d’écriture du journal",
           MessageBoxButton.OK,
           MessageBoxImage.Error);
@@ -104,6 +102,10 @@ namespace EuroMillionsStatisticsManager
         {
           Directory.CreateDirectory(archivesDirectory);
           LogAction("Création du dossier Archives.");
+        }
+        else
+        {
+          LogAction("Dossier Archives déjà existant.");
         }
       }
       catch (IOException exception)
@@ -165,14 +167,17 @@ namespace EuroMillionsStatisticsManager
         Height = settings.Height;
         WindowState = settings.IsMaximized ? WindowState.Maximized : WindowState.Normal;
       }
-      catch (IOException)
+      catch (IOException ioException)
       {
+        LogAction($"Erreur de lecture des paramètres de la fenêtre : {ioException.Message}");
       }
-      catch (UnauthorizedAccessException)
+      catch (UnauthorizedAccessException unauthorizedAccessException)
       {
+        LogAction($"Erreur de lecture des paramètres de la fenêtre : {unauthorizedAccessException.Message}");
       }
-      catch (JsonException)
+      catch (JsonException jsonException)
       {
+        LogAction($"Erreur de lecture des paramètres de la fenêtre : {jsonException.Message}");
       }
     }
 
@@ -193,11 +198,13 @@ namespace EuroMillionsStatisticsManager
         Directory.CreateDirectory(Path.GetDirectoryName(windowSettingsPath)!);
         File.WriteAllText(windowSettingsPath, JsonSerializer.Serialize(settings));
       }
-      catch (IOException)
+      catch (IOException ioException)
       {
+        LogAction($"Erreur de sauvegarde des paramètres de la fenêtre : {ioException.Message}");
       }
-      catch (UnauthorizedAccessException)
+      catch (UnauthorizedAccessException unauthorizedAccessException)
       {
+        LogAction($"Erreur de sauvegarde des paramètres de la fenêtre : {unauthorizedAccessException.Message}");
       }
     }
 
@@ -524,6 +531,7 @@ namespace EuroMillionsStatisticsManager
             .Where(column => IsBallHeader(column.header))
             .Select(column => column.index)
             .ToArray();
+
         if (ballColumns.Length != 5)
         {
           continue;
@@ -595,6 +603,7 @@ namespace EuroMillionsStatisticsManager
             .Where(column => IsBallHeader(column.header))
             .Select(column => column.index)
             .ToArray();
+
         if (ballColumns.Length != 5)
         {
           continue;
@@ -718,15 +727,15 @@ namespace EuroMillionsStatisticsManager
               .SelectMany(secondBall => Enumerable.Range(secondBall + 1, 50 - secondBall)
               .Select(thirdBall =>
               {
-              var dates = GetRecentDrawDates(drawDates[firstBall, secondBall, thirdBall]);
-              return new BallTripletStatistic(
-                $"{firstBall}-{secondBall}-{thirdBall}",
-                counts[firstBall, secondBall, thirdBall],
-                drawCount == 0 ? 0 : counts[firstBall, secondBall, thirdBall] * 100d / drawCount,
-                dates.Latest,
-                dates.Previous,
-                dates.Third,
-                dates.Fourth);
+                var dates = GetRecentDrawDates(drawDates[firstBall, secondBall, thirdBall]);
+                return new BallTripletStatistic(
+                  $"{firstBall}-{secondBall}-{thirdBall}",
+                  counts[firstBall, secondBall, thirdBall],
+                  drawCount == 0 ? 0 : counts[firstBall, secondBall, thirdBall] * 100d / drawCount,
+                  dates.Latest,
+                  dates.Previous,
+                  dates.Third,
+                  dates.Fourth);
               })))
           .ToList();
     }
@@ -808,15 +817,15 @@ namespace EuroMillionsStatisticsManager
           .ThenBy(entry => entry.Key.Fourth)
             .Select(entry =>
             {
-            var dates = GetRecentDrawDates(entry.Value.DrawDates);
-            return new BallQuadrupletStatistic(
-              $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}",
-              entry.Value.Count,
-              drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
-              dates.Latest,
-              dates.Previous,
-              dates.Third,
-              dates.Fourth);
+              var dates = GetRecentDrawDates(entry.Value.DrawDates);
+              return new BallQuadrupletStatistic(
+                $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}",
+                entry.Value.Count,
+                drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
+                dates.Latest,
+                dates.Previous,
+                dates.Third,
+                dates.Fourth);
             })
           .ToList();
     }
@@ -885,15 +894,15 @@ namespace EuroMillionsStatisticsManager
           .ThenBy(entry => entry.Key.Fifth)
             .Select(entry =>
             {
-            var dates = GetRecentDrawDates(entry.Value.DrawDates);
-            return new BallQuintupletStatistic(
-              $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}-{entry.Key.Fifth}",
-              entry.Value.Count,
-              drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
-              dates.Latest,
-              dates.Previous,
-              dates.Third,
-              dates.Fourth);
+              var dates = GetRecentDrawDates(entry.Value.DrawDates);
+              return new BallQuintupletStatistic(
+                $"{entry.Key.First}-{entry.Key.Second}-{entry.Key.Third}-{entry.Key.Fourth}-{entry.Key.Fifth}",
+                entry.Value.Count,
+                drawCount == 0 ? 0 : entry.Value.Count * 100d / drawCount,
+                dates.Latest,
+                dates.Previous,
+                dates.Third,
+                dates.Fourth);
             })
           .ToList();
     }
@@ -949,15 +958,15 @@ namespace EuroMillionsStatisticsManager
       return Enumerable.Range(1, 12)
           .Select(number =>
           {
-          var dates = GetRecentDrawDates(drawDates[number]);
-          return new StarStatistic(
-            number,
-            counts[number],
-            drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
-            dates.Latest,
-            dates.Previous,
-            dates.Third,
-            dates.Fourth);
+            var dates = GetRecentDrawDates(drawDates[number]);
+            return new StarStatistic(
+              number,
+              counts[number],
+              drawCount == 0 ? 0 : counts[number] * 100d / drawCount,
+              dates.Latest,
+              dates.Previous,
+              dates.Third,
+              dates.Fourth);
           })
           .ToList();
     }
@@ -1019,15 +1028,15 @@ namespace EuroMillionsStatisticsManager
           .SelectMany(firstStar => Enumerable.Range(firstStar + 1, 12 - firstStar)
             .Select(secondStar =>
             {
-            var dates = GetRecentDrawDates(drawDates[firstStar, secondStar]);
-            return new StarPairStatistic(
-              $"{firstStar}-{secondStar}",
-              counts[firstStar, secondStar],
-              drawCount == 0 ? 0 : counts[firstStar, secondStar] * 100d / drawCount,
-              dates.Latest,
-              dates.Previous,
-              dates.Third,
-              dates.Fourth);
+              var dates = GetRecentDrawDates(drawDates[firstStar, secondStar]);
+              return new StarPairStatistic(
+                $"{firstStar}-{secondStar}",
+                counts[firstStar, secondStar],
+                drawCount == 0 ? 0 : counts[firstStar, secondStar] * 100d / drawCount,
+                dates.Latest,
+                dates.Previous,
+                dates.Third,
+                dates.Fourth);
             }))
           .ToList();
     }
