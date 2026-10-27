@@ -3,13 +3,12 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.VisualBasic.FileIO;
 using Ellipse = System.Windows.Shapes.Ellipse;
 using Line = System.Windows.Shapes.Line;
-using Microsoft.VisualBasic.FileIO;
 
 namespace EuroMillionsStatisticsManager
 {
@@ -39,7 +38,6 @@ namespace EuroMillionsStatisticsManager
         LogAction("Fermeture de l’application.");
         SaveWindowSettings();
       };
-
     }
 
     private void InitializeLog()
