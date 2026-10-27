@@ -19,10 +19,30 @@ namespace EuroMillionsStatisticsManager
     public MainWindow()
     {
       InitializeComponent();
+      CreateArchivesDirectory();
       SetTitleVersion();
       RestoreWindowSettings();
       Closing += (_, _) => SaveWindowSettings();
       LoadHistory();
+    }
+
+    private void CreateArchivesDirectory()
+    {
+      try
+      {
+        if (!Directory.Exists(archivesDirectory))
+        {
+          Directory.CreateDirectory(archivesDirectory);
+        }
+      }
+      catch (IOException exception)
+      {
+        ShowArchiveError(exception.Message);
+      }
+      catch (UnauthorizedAccessException exception)
+      {
+        ShowArchiveError(exception.Message);
+      }
     }
 
     private void SetTitleVersion()
@@ -193,11 +213,7 @@ namespace EuroMillionsStatisticsManager
     private void ShowArchiveError(string message)
     {
       StatusText.Text = "Impossible de créer ou d’accéder au dossier Archives.";
-      MessageBox.Show(
-          $"Le dossier d’archives n’a pas pu être créé ou ouvert :{Environment.NewLine}{message}",
-          "Erreur d’accès aux archives",
-          MessageBoxButton.OK,
-          MessageBoxImage.Error);
+      MessageBox.Show($"Le dossier d’archives n’a pas pu être créé ou ouvert :{Environment.NewLine}{message}", "Erreur d’accès aux archives", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     private static CsvFileData ReadCsvFile(string filePath)
@@ -208,6 +224,7 @@ namespace EuroMillionsStatisticsManager
         HasFieldsEnclosedInQuotes = true,
         TrimWhiteSpace = false
       };
+
       parser.SetDelimiters(delimiter);
 
       var headers = parser.ReadFields();
