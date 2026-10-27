@@ -275,6 +275,7 @@ namespace EuroMillionsStatisticsManager
       var (distinctFiles, duplicateCount) = RemoveDuplicateDraws(importedFiles);
       var history = BuildHistoryTable(distinctFiles);
       Historique.ItemsSource = history.DefaultView;
+      PoidsBoules.ItemsSource = BuildDrawWeightsTable(distinctFiles).DefaultView;
       Statistiques.ItemsSource = BuildBallStatistics(distinctFiles);
       StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(distinctFiles);
       StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(distinctFiles);
@@ -516,6 +517,67 @@ namespace EuroMillionsStatisticsManager
       }
 
       return history;
+    }
+
+    private static DataTable BuildDrawWeightsTable(IEnumerable<CsvFileData> files)
+    {
+      var weights = new DataTable();
+      weights.Columns.Add("Tirage", typeof(string));
+      weights.Columns.Add("PoidsDesBoules", typeof(int));
+      weights.Columns.Add("PoidsDesEtoiles", typeof(int));
+
+      foreach (var file in files)
+      {
+        var ballColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsBallHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        var starColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsStarHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        if (ballColumns.Length != 5 || starColumns.Length != 2)
+        {
+          continue;
+        }
+
+        foreach (var fields in file.Rows)
+        {
+          var balls = ReadDrawNumbers(fields, ballColumns, 1, 50);
+          var stars = ReadDrawNumbers(fields, starColumns, 1, 12);
+          if (balls.Count != 5 || stars.Count != 2)
+          {
+            continue;
+          }
+
+          var draw = string.Join(
+              "-",
+              ballColumns.Concat(starColumns).Select(column => fields[column]));
+
+          weights.Rows.Add(draw, balls.Sum(), stars.Sum());
+        }
+      }
+
+      return weights;
+    }
+
+    private static HashSet<int> ReadDrawNumbers(string[] fields, IEnumerable<int> columns, int minimum, int maximum)
+    {
+      var numbers = new HashSet<int>();
+      foreach (var column in columns)
+      {
+        if (column < fields.Length
+            && int.TryParse(fields[column], out var number)
+            && number >= minimum
+            && number <= maximum)
+        {
+          numbers.Add(number);
+        }
+      }
+
+      return numbers;
     }
 
     private static List<BallStatistic> BuildBallStatistics(IEnumerable<CsvFileData> files)

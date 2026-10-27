@@ -153,6 +153,22 @@
           </DataGrid.Columns>
         </DataGrid>
       </TabItem>
+      <TabItem Header="PoidsBoules">
+        <DataGrid x:Name="PoidsBoules"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  EnableRowVirtualization="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Tirage" Binding="{Binding Tirage}" />
+            <DataGridTextColumn Header="Poids des boules" Binding="{Binding PoidsDesBoules}" />
+            <DataGridTextColumn Header="Poids des étoiles" Binding="{Binding PoidsDesEtoiles}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="GraphiquePoids">
+
+      </TabItem>
       <TabItem Header="Estimation">
 
       </TabItem>
