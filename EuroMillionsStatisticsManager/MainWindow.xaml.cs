@@ -193,8 +193,8 @@ namespace EuroMillionsStatisticsManager
 
     private void UpdateEstimationDisplay()
     {
-      BallSelectionCount.Text = $"{selectedBalls.Count} boule(s) sur 5 sélectionnée(s)";
-      StarSelectionCount.Text = $"{selectedStars.Count} étoile(s) sur 2 sélectionnée(s)";
+      BallSelectionCount.Text = $"{selectedBalls.Count} boule{Pluralize(selectedBalls.Count)} sur 5 sélectionnées";
+      StarSelectionCount.Text = $"{selectedStars.Count} étoile{Pluralize(selectedStars.Count)} sur 2 sélectionnées";
       foreach (var button in BallNumberPanel.Children.OfType<Button>())
       {
         UpdateNumberButton(button, selectedBalls.Contains((int)button.Tag));
@@ -532,7 +532,7 @@ namespace EuroMillionsStatisticsManager
 
     private static string Pluralize(int count)
     {
-      return count == 1 ? string.Empty : "s";
+      return count <= 1 ? string.Empty : "s";
     }
 
     private HistoryLoadResult PrepareHistoryData()
