@@ -13,10 +13,11 @@ namespace EuroMillionsStatisticsManager
       ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
       var pleaseWait = new PleaseWait();
-      pleaseWait.ContentRendered += (_, _) =>
+      pleaseWait.ContentRendered += async (_, _) =>
       {
         var mainWindow = new MainWindow();
         MainWindow = mainWindow;
+        await mainWindow.LoadHistoryAsync();
         mainWindow.Show();
         pleaseWait.Close();
         ShutdownMode = ShutdownMode.OnMainWindowClose;

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -39,7 +40,6 @@ namespace EuroMillionsStatisticsManager
         SaveWindowSettings();
       };
 
-      LoadHistory();
     }
 
     private void InitializeLog()
@@ -214,24 +214,72 @@ namespace EuroMillionsStatisticsManager
       }
     }
 
-    private void LoadHistory()
+    public async Task LoadHistoryAsync()
     {
       LogAction("Chargement des fichiers CSV du dossier Archives.");
+      var result = await Task.Run(PrepareHistoryData);
+      foreach (var message in result.LogMessages)
+      {
+        LogAction(message);
+      }
+
+      if (result.ArchiveError is not null)
+      {
+        ShowArchiveError(result.ArchiveError);
+        return;
+      }
+
+      Historique.ItemsSource = result.History.DefaultView;
+      PoidsBoules.ItemsSource = result.DrawWeights.DefaultView;
+      weightFrequencies = result.BallWeightFrequencies;
+      PoidsBoulesStatistiques.ItemsSource = weightFrequencies;
+      starWeightFrequencies = result.StarWeightFrequencies;
+      PoidsEtoilesStatistiques.ItemsSource = starWeightFrequencies;
+      DrawWeightChart();
+      DrawStarWeightChart();
+      Statistiques.ItemsSource = result.BallStatistics;
+      StatistiquesPairesBoules.ItemsSource = result.BallPairStatistics;
+      StatistiquesTripletsBoules.ItemsSource = result.BallTripletStatistics;
+      StatistiquesQuadrupletsBoules.ItemsSource = result.BallQuadrupletStatistics;
+      StatistiquesQuintupletsBoules.ItemsSource = result.BallQuintupletStatistics;
+      StatistiquesEtoiles.ItemsSource = result.StarStatistics;
+      StatistiquesPairesEtoiles.ItemsSource = result.StarPairStatistics;
+      StatusText.Text = $"{result.History.Rows.Count} tirage(s) chargé(s) depuis {result.ImportedFileCount} fichier(s).";
+      if (result.DuplicateCount > 0)
+      {
+        StatusText.Text += $" {result.DuplicateCount} doublon(s) ignoré(s).";
+        LogAction($"{result.DuplicateCount} doublon(s) ignoré(s).");
+      }
+
+      LogAction($"{result.History.Rows.Count} tirage(s) chargé(s) depuis {result.ImportedFileCount} fichier(s) CSV.");
+      if (result.Errors.Count > 0)
+      {
+        StatusText.Text += $" {result.Errors.Count} fichier(s) n’ont pas pu être importés.";
+        LogAction($"Chargement terminé avec {result.Errors.Count} erreur(s).");
+        MessageBox.Show(
+            string.Join(Environment.NewLine, result.Errors),
+            "Erreurs de chargement des archives",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+      }
+    }
+
+    private HistoryLoadResult PrepareHistoryData()
+    {
+      var logMessages = new List<string>();
       try
       {
         Directory.CreateDirectory(archivesDirectory);
       }
       catch (IOException exception)
       {
-        LogAction($"Échec du chargement des archives : {exception.Message}");
-        ShowArchiveError(exception.Message);
-        return;
+        logMessages.Add($"Échec du chargement des archives : {exception.Message}");
+        return HistoryLoadResult.Failed(exception.Message, logMessages);
       }
       catch (UnauthorizedAccessException exception)
       {
-        LogAction($"Échec du chargement des archives : {exception.Message}");
-        ShowArchiveError(exception.Message);
-        return;
+        logMessages.Add($"Échec du chargement des archives : {exception.Message}");
+        return HistoryLoadResult.Failed(exception.Message, logMessages);
       }
 
       var importedFiles = new List<CsvFileData>();
@@ -243,15 +291,13 @@ namespace EuroMillionsStatisticsManager
       }
       catch (IOException exception)
       {
-        LogAction($"Impossible de lister les fichiers CSV : {exception.Message}");
-        ShowArchiveError(exception.Message);
-        return;
+        logMessages.Add($"Impossible de lister les fichiers CSV : {exception.Message}");
+        return HistoryLoadResult.Failed(exception.Message, logMessages);
       }
       catch (UnauthorizedAccessException exception)
       {
-        LogAction($"Impossible de lister les fichiers CSV : {exception.Message}");
-        ShowArchiveError(exception.Message);
-        return;
+        logMessages.Add($"Impossible de lister les fichiers CSV : {exception.Message}");
+        return HistoryLoadResult.Failed(exception.Message, logMessages);
       }
 
       foreach (var filePath in files)
@@ -259,61 +305,45 @@ namespace EuroMillionsStatisticsManager
         try
         {
           importedFiles.Add(ReadCsvFile(filePath));
-          LogAction($"Fichier chargé : {Path.GetFileName(filePath)}.");
+          logMessages.Add($"Fichier chargé : {Path.GetFileName(filePath)}.");
         }
         catch (IOException exception)
         {
           errors.Add($"{Path.GetFileName(filePath)} : {exception.Message}");
-          LogAction($"Erreur de lecture du fichier {Path.GetFileName(filePath)} : {exception.Message}");
+          logMessages.Add($"Erreur de lecture du fichier {Path.GetFileName(filePath)} : {exception.Message}");
         }
         catch (UnauthorizedAccessException exception)
         {
           errors.Add($"{Path.GetFileName(filePath)} : {exception.Message}");
-          LogAction($"Accès refusé au fichier {Path.GetFileName(filePath)} : {exception.Message}");
+          logMessages.Add($"Accès refusé au fichier {Path.GetFileName(filePath)} : {exception.Message}");
         }
         catch (MalformedLineException exception)
         {
           errors.Add($"{Path.GetFileName(filePath)}, ligne {exception.LineNumber} : {exception.Message}");
-          LogAction($"Ligne mal formée dans {Path.GetFileName(filePath)}, ligne {exception.LineNumber} : {exception.Message}");
+          logMessages.Add($"Ligne mal formée dans {Path.GetFileName(filePath)}, ligne {exception.LineNumber} : {exception.Message}");
         }
       }
 
       var (distinctFiles, duplicateCount) = RemoveDuplicateDraws(importedFiles);
       var history = BuildHistoryTable(distinctFiles);
-      Historique.ItemsSource = history.DefaultView;
       var drawWeights = BuildDrawWeightsTable(distinctFiles);
-      PoidsBoules.ItemsSource = drawWeights.DefaultView;
-      weightFrequencies = BuildWeightFrequencies(drawWeights, "PoidsDesBoules");
-      PoidsBoulesStatistiques.ItemsSource = weightFrequencies;
-      starWeightFrequencies = BuildWeightFrequencies(drawWeights, "PoidsDesEtoiles");
-      PoidsEtoilesStatistiques.ItemsSource = starWeightFrequencies;
-      DrawWeightChart();
-      DrawStarWeightChart();
-      Statistiques.ItemsSource = BuildBallStatistics(distinctFiles);
-      StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(distinctFiles);
-      StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(distinctFiles);
-      StatistiquesQuadrupletsBoules.ItemsSource = BuildBallQuadrupletStatistics(distinctFiles);
-      StatistiquesQuintupletsBoules.ItemsSource = BuildBallQuintupletStatistics(distinctFiles);
-      StatistiquesEtoiles.ItemsSource = BuildStarStatistics(distinctFiles);
-      StatistiquesPairesEtoiles.ItemsSource = BuildStarPairStatistics(distinctFiles);
-      StatusText.Text = $"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s).";
-      if (duplicateCount > 0)
-      {
-        StatusText.Text += $" {duplicateCount} doublon(s) ignoré(s).";
-        LogAction($"{duplicateCount} doublon(s) ignoré(s).");
-      }
-
-      LogAction($"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s) CSV.");
-      if (errors.Count > 0)
-      {
-        StatusText.Text += $" {errors.Count} fichier(s) n’ont pas pu être importés.";
-        LogAction($"Chargement terminé avec {errors.Count} erreur(s).");
-        MessageBox.Show(
-            string.Join(Environment.NewLine, errors),
-            "Erreurs de chargement des archives",
-            MessageBoxButton.OK,
-            MessageBoxImage.Warning);
-      }
+      return new HistoryLoadResult(
+          history,
+          drawWeights,
+          BuildWeightFrequencies(drawWeights, "PoidsDesBoules"),
+          BuildWeightFrequencies(drawWeights, "PoidsDesEtoiles"),
+          BuildBallStatistics(distinctFiles),
+          BuildBallPairStatistics(distinctFiles),
+          BuildBallTripletStatistics(distinctFiles),
+          BuildBallQuadrupletStatistics(distinctFiles),
+          BuildBallQuintupletStatistics(distinctFiles),
+          BuildStarStatistics(distinctFiles),
+          BuildStarPairStatistics(distinctFiles),
+          importedFiles.Count,
+          duplicateCount,
+          errors,
+          logMessages,
+          null);
     }
 
     private void ShowArchiveError(string message)
@@ -1317,6 +1347,46 @@ namespace EuroMillionsStatisticsManager
     }
 
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
+
+    private sealed record HistoryLoadResult(
+      DataTable History,
+      DataTable DrawWeights,
+      IReadOnlyList<WeightFrequency> BallWeightFrequencies,
+      IReadOnlyList<WeightFrequency> StarWeightFrequencies,
+      IReadOnlyList<BallStatistic> BallStatistics,
+      IReadOnlyList<BallPairStatistic> BallPairStatistics,
+      IReadOnlyList<BallTripletStatistic> BallTripletStatistics,
+      IReadOnlyList<BallQuadrupletStatistic> BallQuadrupletStatistics,
+      IReadOnlyList<BallQuintupletStatistic> BallQuintupletStatistics,
+      IReadOnlyList<StarStatistic> StarStatistics,
+      IReadOnlyList<StarPairStatistic> StarPairStatistics,
+      int ImportedFileCount,
+      int DuplicateCount,
+      IReadOnlyList<string> Errors,
+      IReadOnlyList<string> LogMessages,
+      string? ArchiveError)
+    {
+      public static HistoryLoadResult Failed(string message, IReadOnlyList<string> logMessages)
+      {
+        return new HistoryLoadResult(
+            new DataTable(),
+            new DataTable(),
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            0,
+            0,
+            [],
+            logMessages,
+            message);
+      }
+    }
 
     private sealed record WeightFrequency(int Weight, int Count, DateTime? Latest, DateTime? Previous);
 
