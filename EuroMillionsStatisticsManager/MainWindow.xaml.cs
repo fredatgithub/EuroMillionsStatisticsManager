@@ -283,19 +283,9 @@ namespace EuroMillionsStatisticsManager
       Historique.ItemsSource = history.DefaultView;
       var drawWeights = BuildDrawWeightsTable(distinctFiles);
       PoidsBoules.ItemsSource = drawWeights.DefaultView;
-      weightFrequencies = drawWeights.Rows
-          .Cast<DataRow>()
-          .GroupBy(row => (int)row["PoidsDesBoules"])
-          .OrderBy(group => group.Key)
-          .Select(group => new WeightFrequency(group.Key, group.Count()))
-          .ToArray();
+      weightFrequencies = BuildWeightFrequencies(drawWeights, "PoidsDesBoules");
       PoidsBoulesStatistiques.ItemsSource = weightFrequencies;
-      starWeightFrequencies = drawWeights.Rows
-          .Cast<DataRow>()
-          .GroupBy(row => (int)row["PoidsDesEtoiles"])
-          .OrderBy(group => group.Key)
-          .Select(group => new WeightFrequency(group.Key, group.Count()))
-          .ToArray();
+      starWeightFrequencies = BuildWeightFrequencies(drawWeights, "PoidsDesEtoiles");
       DrawWeightChart();
       DrawStarWeightChart();
       Statistiques.ItemsSource = BuildBallStatistics(distinctFiles);
@@ -547,6 +537,7 @@ namespace EuroMillionsStatisticsManager
       weights.Columns.Add("Tirage", typeof(string));
       weights.Columns.Add("PoidsDesBoules", typeof(int));
       weights.Columns.Add("PoidsDesEtoiles", typeof(int));
+      weights.Columns.Add("DateTirage", typeof(DateTime));
 
       foreach (var file in files)
       {
@@ -560,6 +551,7 @@ namespace EuroMillionsStatisticsManager
             .Where(column => IsStarHeader(column.header))
             .Select(column => column.index)
             .ToArray();
+        var dateColumn = Array.FindIndex(file.Headers, IsDateHeader);
         if (ballColumns.Length != 5 || starColumns.Length != 2)
         {
           continue;
@@ -577,8 +569,15 @@ namespace EuroMillionsStatisticsManager
           var draw = string.Join(
               "-",
               ballColumns.Concat(starColumns).Select(column => fields[column]));
+          var drawDate = dateColumn >= 0 && dateColumn < fields.Length
+              ? ParseDrawDate(fields[dateColumn])
+              : null;
 
-          weights.Rows.Add(draw, balls.Sum(), stars.Sum());
+          weights.Rows.Add(
+              draw,
+              balls.Sum(),
+              stars.Sum(),
+              drawDate.HasValue ? (object)drawDate.Value : DBNull.Value);
         }
       }
 
@@ -600,6 +599,32 @@ namespace EuroMillionsStatisticsManager
       }
 
       return numbers;
+    }
+
+    private static IReadOnlyList<WeightFrequency> BuildWeightFrequencies(DataTable drawWeights, string weightColumn)
+    {
+      return drawWeights.Rows
+          .Cast<DataRow>()
+          .GroupBy(row => (int)row[weightColumn])
+          .OrderBy(group => group.Key)
+          .Select(group =>
+          {
+            var recentDates = group
+                .Select(row => row.Field<DateTime?>("DateTirage"))
+                .Where(date => date.HasValue)
+                .Select(date => date!.Value)
+                .Distinct()
+                .OrderByDescending(date => date)
+                .Take(2)
+                .ToArray();
+
+            return new WeightFrequency(
+                group.Key,
+                group.Count(),
+                recentDates.Length > 0 ? recentDates[0] : null,
+                recentDates.Length > 1 ? recentDates[1] : null);
+          })
+          .ToArray();
     }
 
     private void GraphiquePoidsCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -1292,7 +1317,7 @@ namespace EuroMillionsStatisticsManager
 
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
 
-    private sealed record WeightFrequency(int Weight, int Count);
+    private sealed record WeightFrequency(int Weight, int Count, DateTime? Latest, DateTime? Previous);
 
     private sealed record WindowSettings(double Left, double Top, double Width, double Height, bool IsMaximized);
 
