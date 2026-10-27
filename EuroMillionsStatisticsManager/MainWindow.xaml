@@ -10,15 +10,15 @@
         MinHeight="400"
         MinWidth="650"
         FontSize="14">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="0" Margin="10">
-            <TabItem Header="Historique">
-                <DataGrid x:Name="Historique"
+    <TabControl Grid.Row="0" Margin="10">
+      <TabItem Header="Historique">
+        <DataGrid x:Name="Historique"
                           AutoGenerateColumns="True"
                           CanUserAddRows="False"
                           IsReadOnly="True"
@@ -26,135 +26,138 @@
                           SelectionUnit="FullRow"
                           EnableRowVirtualization="True"
                           EnableColumnVirtualization="True" />
-            </TabItem>
-            <TabItem Header="Boules" Height="20" VerticalAlignment="Bottom">
-                <DataGrid x:Name="Statistiques"
+      </TabItem>
+      <TabItem Header="Boules" Height="20" VerticalAlignment="Bottom">
+        <DataGrid x:Name="Statistiques"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Numéro de la boule" Binding="{Binding Numero}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="2 boules">
-                <DataGrid x:Name="StatistiquesPairesBoules"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Numéro de la boule" Binding="{Binding Numero}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="2 boules">
+        <DataGrid x:Name="StatistiquesPairesBoules"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Paire de boules" Binding="{Binding Paire}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="3 boules">
-                <DataGrid x:Name="StatistiquesTripletsBoules"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Paire de boules" Binding="{Binding Paire}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="3 boules">
+        <DataGrid x:Name="StatistiquesTripletsBoules"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Triplet de boules" Binding="{Binding Triplet}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="4 boules">
-                <DataGrid x:Name="StatistiquesQuadrupletsBoules"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Triplet de boules" Binding="{Binding Triplet}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="4 boules">
+        <DataGrid x:Name="StatistiquesQuadrupletsBoules"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Combinaison de 4 boules" Binding="{Binding Quadruplet}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="5 boules">
-                <DataGrid x:Name="StatistiquesQuintupletsBoules"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Combinaison de 4 boules" Binding="{Binding Quadruplet}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="5 boules">
+        <DataGrid x:Name="StatistiquesQuintupletsBoules"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Combinaison de 5 boules" Binding="{Binding Quintuplet}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="Etoiles">
-                <DataGrid x:Name="StatistiquesEtoiles"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Combinaison de 5 boules" Binding="{Binding Quintuplet}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="Etoiles">
+        <DataGrid x:Name="StatistiquesEtoiles"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Numéro de l’étoile" Binding="{Binding Numero}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="2 étoiles">
-                <DataGrid x:Name="StatistiquesPairesEtoiles"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Numéro de l’étoile" Binding="{Binding Numero}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="2 étoiles">
+        <DataGrid x:Name="StatistiquesPairesEtoiles"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
                           IsReadOnly="True"
                           ItemsSource="{Binding}"
                           EnableRowVirtualization="True">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Couple d’étoiles" Binding="{Binding Couple}" />
-                        <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
-                        <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
-                        <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                        <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </TabItem>
-            <TabItem Header="Log">
-                <TextBox x:Name="LogText"
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Couple d’étoiles" Binding="{Binding Couple}" />
+            <DataGridTextColumn Header="Nombre de sorties" Binding="{Binding NombreDeSorties}" />
+            <DataGridTextColumn Header="Pourcentage de sortie" Binding="{Binding PourcentageDeSortie, StringFormat={}{0:F2} %}" />
+            <DataGridTextColumn Header="Date de la dernière sortie" Binding="{Binding DerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernière sortie" Binding="{Binding AvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-avant-dernière sortie" Binding="{Binding AvantAvantDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de la 4e dernière sortie" Binding="{Binding QuatriemeDerniereSortie, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
+      <TabItem Header="Estimation">
+
+      </TabItem>
+      <TabItem Header="Log">
+        <TextBox x:Name="LogText"
                          IsReadOnly="True"
                          AcceptsReturn="True"
                          TextWrapping="NoWrap"
@@ -162,11 +165,11 @@
                          HorizontalScrollBarVisibility="Auto"
                          FontFamily="Consolas"
                          FontSize="16" />
-            </TabItem>
-        </TabControl>
+      </TabItem>
+    </TabControl>
 
-        <StatusBar Grid.Row="1">
-            <TextBlock x:Name="StatusText" Text="Chargement de l’historique..." />
-        </StatusBar>
-    </Grid>
+    <StatusBar Grid.Row="1">
+      <TextBlock x:Name="StatusText" Text="Chargement de l’historique..." />
+    </StatusBar>
+  </Grid>
 </Window>
