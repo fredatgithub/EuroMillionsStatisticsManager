@@ -10,6 +10,12 @@
         MinHeight="400"
         MinWidth="650"
         FontSize="14">
+  <Window.Resources>
+    <Style TargetType="{x:Type DataGrid}">
+      <Setter Property="RowBackground" Value="White" />
+      <Setter Property="AlternatingRowBackground" Value="#EAF5FF" />
+    </Style>
+  </Window.Resources>
   <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="*" />
