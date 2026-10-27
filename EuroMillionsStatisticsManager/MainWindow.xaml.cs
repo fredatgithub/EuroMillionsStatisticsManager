@@ -4,6 +4,10 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using Ellipse = System.Windows.Shapes.Ellipse;
+using Line = System.Windows.Shapes.Line;
 using Microsoft.VisualBasic.FileIO;
 
 namespace EuroMillionsStatisticsManager
@@ -18,6 +22,7 @@ namespace EuroMillionsStatisticsManager
 
     private bool logFileAvailable;
     private bool logWriteErrorReported;
+    private IReadOnlyList<WeightFrequency> weightFrequencies = [];
 
     public MainWindow()
     {
@@ -275,7 +280,15 @@ namespace EuroMillionsStatisticsManager
       var (distinctFiles, duplicateCount) = RemoveDuplicateDraws(importedFiles);
       var history = BuildHistoryTable(distinctFiles);
       Historique.ItemsSource = history.DefaultView;
-      PoidsBoules.ItemsSource = BuildDrawWeightsTable(distinctFiles).DefaultView;
+      var drawWeights = BuildDrawWeightsTable(distinctFiles);
+      PoidsBoules.ItemsSource = drawWeights.DefaultView;
+      weightFrequencies = drawWeights.Rows
+          .Cast<DataRow>()
+          .GroupBy(row => (int)row["PoidsDesBoules"])
+          .OrderBy(group => group.Key)
+          .Select(group => new WeightFrequency(group.Key, group.Count()))
+          .ToArray();
+      DrawWeightChart();
       Statistiques.ItemsSource = BuildBallStatistics(distinctFiles);
       StatistiquesPairesBoules.ItemsSource = BuildBallPairStatistics(distinctFiles);
       StatistiquesTripletsBoules.ItemsSource = BuildBallTripletStatistics(distinctFiles);
@@ -578,6 +591,115 @@ namespace EuroMillionsStatisticsManager
       }
 
       return numbers;
+    }
+
+    private void GraphiquePoidsCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+      DrawWeightChart();
+    }
+
+    private void DrawWeightChart()
+    {
+      if (GraphiquePoidsCanvas is null)
+      {
+        return;
+      }
+
+      GraphiquePoidsCanvas.Children.Clear();
+      var width = GraphiquePoidsCanvas.ActualWidth;
+      var height = GraphiquePoidsCanvas.ActualHeight;
+      if (width < 200 || height < 150)
+      {
+        return;
+      }
+
+      if (weightFrequencies.Count == 0)
+      {
+        AddChartText("Aucun tirage à afficher.", width / 2 - 75, height / 2 - 12);
+        return;
+      }
+
+      const double leftMargin = 60;
+      const double rightMargin = 25;
+      const double topMargin = 35;
+      const double bottomMargin = 55;
+      var plotWidth = width - leftMargin - rightMargin;
+      var plotHeight = height - topMargin - bottomMargin;
+      var minimumWeight = (int)Math.Floor(weightFrequencies[0].Weight / 10d) * 10;
+      var maximumWeight = (int)Math.Ceiling(weightFrequencies[^1].Weight / 10d) * 10;
+      if (maximumWeight == minimumWeight)
+      {
+        maximumWeight += 10;
+      }
+
+      var maximumCount = weightFrequencies.Max(frequency => frequency.Count);
+      var countStep = Math.Max(1, (int)Math.Ceiling(maximumCount / 5d));
+      var yAxisMaximum = (int)Math.Ceiling(maximumCount / (double)countStep) * countStep;
+
+      AddChartText("Quantité de tirages", leftMargin, 8);
+      AddChartText("Poids des boules", leftMargin + plotWidth / 2 - 45, height - 25);
+
+      for (var count = 0; count <= yAxisMaximum; count += countStep)
+      {
+        var y = topMargin + plotHeight - count * plotHeight / yAxisMaximum;
+        AddChartLine(leftMargin, y, leftMargin + plotWidth, y, count == 0 ? Brushes.Black : Brushes.LightGray, count == 0 ? 1.5 : 1);
+        AddChartText(count.ToString(CultureInfo.InvariantCulture), 18, y - 9, 36, TextAlignment.Right);
+      }
+
+      const int xTickCount = 5;
+      for (var tick = 0; tick <= xTickCount; tick++)
+      {
+        var weight = minimumWeight + (maximumWeight - minimumWeight) * tick / xTickCount;
+        var x = leftMargin + plotWidth * tick / xTickCount;
+        AddChartLine(x, topMargin, x, topMargin + plotHeight, Brushes.LightGray, 1);
+        AddChartText(weight.ToString(CultureInfo.InvariantCulture), x - 20, topMargin + plotHeight + 8, 40, TextAlignment.Center);
+      }
+
+      foreach (var frequency in weightFrequencies)
+      {
+        var x = leftMargin + (frequency.Weight - minimumWeight) * plotWidth / (maximumWeight - minimumWeight);
+        var y = topMargin + plotHeight - frequency.Count * plotHeight / yAxisMaximum;
+        var point = new Ellipse
+        {
+          Width = 8,
+          Height = 8,
+          Fill = Brushes.DodgerBlue,
+          Stroke = Brushes.DarkBlue,
+          StrokeThickness = 1,
+          ToolTip = $"Poids : {frequency.Weight}{Environment.NewLine}Tirages : {frequency.Count}"
+        };
+        Canvas.SetLeft(point, x - point.Width / 2);
+        Canvas.SetTop(point, y - point.Height / 2);
+        GraphiquePoidsCanvas.Children.Add(point);
+      }
+    }
+
+    private void AddChartLine(double x1, double y1, double x2, double y2, Brush color, double thickness)
+    {
+      var line = new Line
+      {
+        X1 = x1,
+        Y1 = y1,
+        X2 = x2,
+        Y2 = y2,
+        Stroke = color,
+        StrokeThickness = thickness
+      };
+      GraphiquePoidsCanvas.Children.Add(line);
+    }
+
+    private void AddChartText(string text, double left, double top, double width = 150, TextAlignment alignment = TextAlignment.Left)
+    {
+      var label = new TextBlock
+      {
+        Text = text,
+        Width = width,
+        TextAlignment = alignment,
+        Foreground = Brushes.Black
+      };
+      Canvas.SetLeft(label, left);
+      Canvas.SetTop(label, top);
+      GraphiquePoidsCanvas.Children.Add(label);
     }
 
     private static List<BallStatistic> BuildBallStatistics(IEnumerable<CsvFileData> files)
@@ -1145,6 +1267,8 @@ namespace EuroMillionsStatisticsManager
     }
 
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
+
+    private sealed record WeightFrequency(int Weight, int Count);
 
     private sealed record WindowSettings(double Left, double Top, double Width, double Height, bool IsMaximized);
 

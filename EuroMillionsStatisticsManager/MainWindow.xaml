@@ -167,6 +167,11 @@
         </DataGrid>
       </TabItem>
       <TabItem Header="GraphiquePoids">
+        <Canvas x:Name="GraphiquePoidsCanvas"
+                Background="White"
+                SizeChanged="GraphiquePoidsCanvas_SizeChanged" />
+      </TabItem>
+      <TabItem Header="GraphiquePoidsEtoiles">
 
       </TabItem>
       <TabItem Header="Estimation">
