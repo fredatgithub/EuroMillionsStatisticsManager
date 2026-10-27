@@ -152,6 +152,16 @@
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
+            <TabItem Header="Log">
+                <TextBox x:Name="LogText"
+                         IsReadOnly="True"
+                         AcceptsReturn="True"
+                         TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas"
+                         FontSize="14" />
+            </TabItem>
         </TabControl>
 
         <StatusBar Grid.Row="1">

@@ -11,19 +11,89 @@ namespace EuroMillionsStatisticsManager
   public partial class MainWindow: Window
   {
     private readonly string archivesDirectory = Path.Combine(AppContext.BaseDirectory, "Archives");
+    private readonly string logFilePath = Path.Combine(
+        AppContext.BaseDirectory,
+        $"EuroMillionsStatisticsManager-{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture)}.log");
     private readonly string windowSettingsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "EuroMillionsStatisticsManager",
         "window-settings.json");
+    private bool logFileAvailable;
+    private bool logWriteErrorReported;
 
     public MainWindow()
     {
       InitializeComponent();
+      InitializeLog();
+      LogAction("Démarrage de l’application.");
       CreateArchivesDirectory();
       SetTitleVersion();
       RestoreWindowSettings();
-      Closing += (_, _) => SaveWindowSettings();
+      Closing += (_, _) =>
+      {
+        LogAction("Fermeture de l’application.");
+        SaveWindowSettings();
+      };
       LoadHistory();
+    }
+
+    private void InitializeLog()
+    {
+      try
+      {
+        File.WriteAllText(logFilePath, string.Empty, new UTF8Encoding(false));
+        logFileAvailable = true;
+      }
+      catch (IOException exception)
+      {
+        ReportLogWriteError(exception.Message);
+      }
+      catch (UnauthorizedAccessException exception)
+      {
+        ReportLogWriteError(exception.Message);
+      }
+    }
+
+    private void LogAction(string action)
+    {
+      var entry = $"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} - {action}";
+      LogText.AppendText(entry + Environment.NewLine);
+      LogText.ScrollToEnd();
+
+      if (!logFileAvailable)
+      {
+        return;
+      }
+
+      try
+      {
+        File.AppendAllText(logFilePath, entry + Environment.NewLine, new UTF8Encoding(false));
+      }
+      catch (IOException exception)
+      {
+        logFileAvailable = false;
+        ReportLogWriteError(exception.Message);
+      }
+      catch (UnauthorizedAccessException exception)
+      {
+        logFileAvailable = false;
+        ReportLogWriteError(exception.Message);
+      }
+    }
+
+    private void ReportLogWriteError(string message)
+    {
+      if (logWriteErrorReported)
+      {
+        return;
+      }
+
+      logWriteErrorReported = true;
+      MessageBox.Show(
+          $"Le fichier journal n’a pas pu être créé ou mis à jour :{Environment.NewLine}{message}",
+          "Erreur d’écriture du journal",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
     }
 
     private void CreateArchivesDirectory()
@@ -33,14 +103,17 @@ namespace EuroMillionsStatisticsManager
         if (!Directory.Exists(archivesDirectory))
         {
           Directory.CreateDirectory(archivesDirectory);
+          LogAction("Création du dossier Archives.");
         }
       }
       catch (IOException exception)
       {
+        LogAction($"Erreur d’accès au dossier Archives : {exception.Message}");
         ShowArchiveError(exception.Message);
       }
       catch (UnauthorizedAccessException exception)
       {
+        LogAction($"Erreur d’accès au dossier Archives : {exception.Message}");
         ShowArchiveError(exception.Message);
       }
     }
@@ -130,17 +203,20 @@ namespace EuroMillionsStatisticsManager
 
     private void LoadHistory()
     {
+      LogAction("Chargement des fichiers CSV du dossier Archives.");
       try
       {
         Directory.CreateDirectory(archivesDirectory);
       }
       catch (IOException exception)
       {
+        LogAction($"Échec du chargement des archives : {exception.Message}");
         ShowArchiveError(exception.Message);
         return;
       }
       catch (UnauthorizedAccessException exception)
       {
+        LogAction($"Échec du chargement des archives : {exception.Message}");
         ShowArchiveError(exception.Message);
         return;
       }
@@ -154,11 +230,13 @@ namespace EuroMillionsStatisticsManager
       }
       catch (IOException exception)
       {
+        LogAction($"Impossible de lister les fichiers CSV : {exception.Message}");
         ShowArchiveError(exception.Message);
         return;
       }
       catch (UnauthorizedAccessException exception)
       {
+        LogAction($"Impossible de lister les fichiers CSV : {exception.Message}");
         ShowArchiveError(exception.Message);
         return;
       }
@@ -168,18 +246,22 @@ namespace EuroMillionsStatisticsManager
         try
         {
           importedFiles.Add(ReadCsvFile(filePath));
+          LogAction($"Fichier chargé : {Path.GetFileName(filePath)}.");
         }
         catch (IOException exception)
         {
           errors.Add($"{Path.GetFileName(filePath)} : {exception.Message}");
+          LogAction($"Erreur de lecture du fichier {Path.GetFileName(filePath)} : {exception.Message}");
         }
         catch (UnauthorizedAccessException exception)
         {
           errors.Add($"{Path.GetFileName(filePath)} : {exception.Message}");
+          LogAction($"Accès refusé au fichier {Path.GetFileName(filePath)} : {exception.Message}");
         }
         catch (MalformedLineException exception)
         {
           errors.Add($"{Path.GetFileName(filePath)}, ligne {exception.LineNumber} : {exception.Message}");
+          LogAction($"Ligne mal formée dans {Path.GetFileName(filePath)}, ligne {exception.LineNumber} : {exception.Message}");
         }
       }
 
@@ -197,11 +279,14 @@ namespace EuroMillionsStatisticsManager
       if (duplicateCount > 0)
       {
         StatusText.Text += $" {duplicateCount} doublon(s) ignoré(s).";
+        LogAction($"{duplicateCount} doublon(s) ignoré(s).");
       }
 
+      LogAction($"{history.Rows.Count} tirage(s) chargé(s) depuis {importedFiles.Count} fichier(s) CSV.");
       if (errors.Count > 0)
       {
         StatusText.Text += $" {errors.Count} fichier(s) n’ont pas pu être importés.";
+        LogAction($"Chargement terminé avec {errors.Count} erreur(s).");
         MessageBox.Show(
             string.Join(Environment.NewLine, errors),
             "Erreurs de chargement des archives",
@@ -213,6 +298,7 @@ namespace EuroMillionsStatisticsManager
     private void ShowArchiveError(string message)
     {
       StatusText.Text = "Impossible de créer ou d’accéder au dossier Archives.";
+      LogAction($"Erreur d’accès aux archives : {message}");
       MessageBox.Show($"Le dossier d’archives n’a pas pu être créé ou ouvert :{Environment.NewLine}{message}", "Erreur d’accès aux archives", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
