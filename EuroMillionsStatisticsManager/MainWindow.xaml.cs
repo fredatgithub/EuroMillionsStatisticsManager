@@ -286,6 +286,7 @@ namespace EuroMillionsStatisticsManager
       weightFrequencies = BuildWeightFrequencies(drawWeights, "PoidsDesBoules");
       PoidsBoulesStatistiques.ItemsSource = weightFrequencies;
       starWeightFrequencies = BuildWeightFrequencies(drawWeights, "PoidsDesEtoiles");
+      PoidsEtoilesStatistiques.ItemsSource = starWeightFrequencies;
       DrawWeightChart();
       DrawStarWeightChart();
       Statistiques.ItemsSource = BuildBallStatistics(distinctFiles);

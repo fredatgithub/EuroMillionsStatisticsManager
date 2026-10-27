@@ -180,6 +180,20 @@
           </DataGrid.Columns>
         </DataGrid>
       </TabItem>
+      <TabItem Header="PoidsEtoilesStatistiques">
+        <DataGrid x:Name="PoidsEtoilesStatistiques"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  EnableRowVirtualization="True">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Poids du tirage" Binding="{Binding Weight}" />
+            <DataGridTextColumn Header="Nombre de tirages" Binding="{Binding Count}" />
+            <DataGridTextColumn Header="Date du dernier tirage" Binding="{Binding Latest, StringFormat={}{0:dd/MM/yyyy}}" />
+            <DataGridTextColumn Header="Date de l’avant-dernier tirage" Binding="{Binding Previous, StringFormat={}{0:dd/MM/yyyy}}" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </TabItem>
       <TabItem Header="GraphiquePoids">
         <Canvas x:Name="GraphiquePoidsCanvas"
                 Background="White"
