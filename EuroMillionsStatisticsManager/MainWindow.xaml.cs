@@ -24,10 +24,16 @@ namespace EuroMillionsStatisticsManager
     private bool logWriteErrorReported;
     private IReadOnlyList<WeightFrequency> weightFrequencies = [];
     private IReadOnlyList<WeightFrequency> starWeightFrequencies = [];
+    private HashSet<string> drawnBallCombinations = new(StringComparer.Ordinal);
+    private Dictionary<string, int> ballSubsetFrequencies = new(StringComparer.Ordinal);
+    private readonly HashSet<int> selectedBalls = [];
+    private readonly HashSet<int> selectedStars = [];
+    private bool estimationHistoryAvailable;
 
     public MainWindow()
     {
       InitializeComponent();
+      InitializeEstimationControls();
       InitializeLog();
       LogAction("Démarrage de l’application.");
       CreateArchivesDirectory();
@@ -38,6 +44,264 @@ namespace EuroMillionsStatisticsManager
         LogAction("Fermeture de l’application.");
         SaveWindowSettings();
       };
+    }
+
+    private void InitializeEstimationControls()
+    {
+      for (var number = 1; number <= 50; number++)
+      {
+        var button = CreateEstimationNumberButton(number);
+        button.Click += BallNumber_Click;
+        BallNumberPanel.Children.Add(button);
+      }
+
+      for (var number = 1; number <= 12; number++)
+      {
+        var button = CreateEstimationNumberButton(number);
+        button.Click += StarNumber_Click;
+        StarNumberPanel.Children.Add(button);
+      }
+
+      UpdateEstimationDisplay();
+    }
+
+    private static int[] GetRandomNumbers(int maximum, int count)
+    {
+      var numbers = new HashSet<int>();
+      while (numbers.Count < count)
+      {
+        numbers.Add(Random.Shared.Next(1, maximum + 1));
+      }
+
+      return numbers.Order().ToArray();
+    }
+
+    private static Button CreateEstimationNumberButton(int number)
+    {
+      return new Button
+      {
+        Content = number.ToString(CultureInfo.InvariantCulture),
+        Tag = number,
+        MinWidth = 30,
+        Padding = new Thickness(2, 1, 2, 1),
+        Margin = new Thickness(2),
+        FontWeight = FontWeights.Bold,
+        Background = Brushes.White,
+        BorderBrush = Brushes.LightGray
+      };
+    }
+
+    private void BallNumber_Click(object sender, RoutedEventArgs e)
+    {
+      ToggleNumber(sender, selectedBalls, 5, "boules");
+    }
+
+    private void StarNumber_Click(object sender, RoutedEventArgs e)
+    {
+      ToggleNumber(sender, selectedStars, 2, "étoiles");
+    }
+
+    private void ToggleNumber(object sender, HashSet<int> selection, int maximum, string numberType)
+    {
+      if (sender is not Button { Tag: int number })
+      {
+        return;
+      }
+
+      if (!selection.Remove(number) && selection.Count < maximum)
+      {
+        selection.Add(number);
+      }
+      else if (selection.Count >= maximum && !selection.Contains(number))
+      {
+        EstimationStatus.Text = $"Vous ne pouvez sélectionner que {maximum} {numberType}.";
+        return;
+      }
+
+      EstimationStatus.Text = string.Empty;
+      OptimizedScoreResult.Text = string.Empty;
+      UpdateEstimationDisplay();
+    }
+
+    private void GenerateDraw_Click(object sender, RoutedEventArgs e)
+    {
+      SetEstimationSelection(
+          GetRandomNumbers(50, 5),
+          GetRandomNumbers(12, 2));
+      EstimationStatus.Text = "Combinaison générée au hasard.";
+      OptimizedScoreResult.Text = string.Empty;
+      UpdateEstimationDisplay();
+    }
+
+    private void GenerateOptimizedDraw_Click(object sender, RoutedEventArgs e)
+    {
+      if (!estimationHistoryAvailable)
+      {
+        EstimationStatus.Text = "L’historique n’est pas chargé ; la génération optimisée est indisponible.";
+        return;
+      }
+
+      const int candidateCount = 30000;
+      var bestScore = long.MinValue;
+      var bestCandidates = new List<int[]>();
+      var examinedCandidates = new HashSet<string>(StringComparer.Ordinal);
+
+      for (var candidateIndex = 0; candidateIndex < candidateCount; candidateIndex++)
+      {
+        var balls = GetRandomNumbers(50, 5);
+        var key = FormatNumberCombination(balls);
+        if (!examinedCandidates.Add(key) || drawnBallCombinations.Contains(key))
+        {
+          continue;
+        }
+
+        var score = GetHistoricalSubsetScore(balls);
+        if (score > bestScore)
+        {
+          bestScore = score;
+          bestCandidates.Clear();
+          bestCandidates.Add(balls);
+        }
+        else if (score == bestScore)
+        {
+          bestCandidates.Add(balls);
+        }
+      }
+
+      if (bestCandidates.Count == 0)
+      {
+        EstimationStatus.Text = "Aucune combinaison inédite trouvée. Vérifiez l’historique chargé.";
+        return;
+      }
+
+      var chosenBalls = bestCandidates[Random.Shared.Next(bestCandidates.Count)];
+      var chosenStars = GetRandomNumbers(12, 2);
+      SetEstimationSelection(chosenBalls, chosenStars);
+      EstimationStatus.Text = "Combinaison inédite optimisée selon les fréquences historiques des paires, triplets et quadruplets (30 000 essais).";
+      OptimizedScoreResult.Text = $"Score historique des sous-combinaisons : {bestScore}. L’historique ne permet pas de prédire les prochains tirages.";
+      UpdateEstimationDisplay();
+    }
+
+    private void SetEstimationSelection(IEnumerable<int> balls, IEnumerable<int> stars)
+    {
+      selectedBalls.Clear();
+      selectedBalls.UnionWith(balls);
+      selectedStars.Clear();
+      selectedStars.UnionWith(stars);
+    }
+
+    private void UpdateEstimationDisplay()
+    {
+      BallSelectionCount.Text = $"{selectedBalls.Count} boule(s) sur 5 sélectionnée(s)";
+      StarSelectionCount.Text = $"{selectedStars.Count} étoile(s) sur 2 sélectionnée(s)";
+      foreach (var button in BallNumberPanel.Children.OfType<Button>())
+      {
+        UpdateNumberButton(button, selectedBalls.Contains((int)button.Tag));
+      }
+
+      foreach (var button in StarNumberPanel.Children.OfType<Button>())
+      {
+        UpdateNumberButton(button, selectedStars.Contains((int)button.Tag));
+      }
+
+      if (selectedBalls.Count != 5 || selectedStars.Count != 2)
+      {
+        BallWeightResult.Text = string.Empty;
+        StarWeightResult.Text = string.Empty;
+        BallDistributionResult.Text = string.Empty;
+        HistoryMatchResult.Text = string.Empty;
+        return;
+      }
+
+      var balls = selectedBalls.Order().ToArray();
+      var stars = selectedStars.Order().ToArray();
+      BallWeightResult.Text = $"Poids des boules : {balls.Sum()} (entre 15 et 240 ; moyenne théorique : 127,5)";
+      StarWeightResult.Text = $"Poids des étoiles : {stars.Sum()} (entre 3 et 23 ; moyenne théorique : 13)";
+      var rowCounts = Enumerable.Range(0, 5)
+          .Select(row => balls.Count(number => (number - 1) / 10 == row));
+      var columnCounts = Enumerable.Range(0, 10)
+          .Select(column => balls.Count(number => (number - 1) % 10 == column));
+      BallDistributionResult.Text =
+          $"Nombre par ligne : {string.Join(" + ", rowCounts)}{Environment.NewLine}" +
+          $"Nombre par colonne : {string.Join(" + ", columnCounts)}";
+
+      var key = FormatNumberCombination(balls);
+      var pairCount = CountHistoricalSubsets(balls, 2);
+      var tripletCount = CountHistoricalSubsets(balls, 3);
+      var quadrupletCount = CountHistoricalSubsets(balls, 4);
+      HistoryMatchResult.Text =
+          $"5 boules déjà sorties ensemble : {(drawnBallCombinations.Contains(key) ? "Oui" : "Non")}{Environment.NewLine}" +
+          $"Sous-combinaisons déjà vues : paires {pairCount}/10, triplets {tripletCount}/10, quadruplets {quadrupletCount}/5";
+    }
+
+    private static void UpdateNumberButton(Button button, bool isSelected)
+    {
+      button.Background = isSelected ? Brushes.Tomato : Brushes.White;
+      button.BorderBrush = isSelected ? Brushes.OrangeRed : Brushes.LightGray;
+    }
+
+    private long GetHistoricalSubsetScore(int[] balls)
+    {
+      long score = 0;
+      for (var subsetSize = 2; subsetSize <= 4; subsetSize++)
+      {
+        score += GetSubsetFrequencyScore(balls, subsetSize);
+      }
+
+      return score;
+    }
+
+    private long GetSubsetFrequencyScore(int[] numbers, int subsetSize)
+    {
+      long score = 0;
+      VisitCombinations(numbers, subsetSize, combination =>
+      {
+        if (ballSubsetFrequencies.TryGetValue(FormatNumberCombination(combination), out var count))
+        {
+          score += count;
+        }
+      });
+      return score;
+    }
+
+    private int CountHistoricalSubsets(int[] numbers, int subsetSize)
+    {
+      var count = 0;
+      VisitCombinations(numbers, subsetSize, combination =>
+      {
+        if (ballSubsetFrequencies.ContainsKey(FormatNumberCombination(combination)))
+        {
+          count++;
+        }
+      });
+      return count;
+    }
+
+    private static void VisitCombinations(int[] numbers, int subsetSize, Action<int[]> action)
+    {
+      var combination = new int[subsetSize];
+
+      void Visit(int sourceIndex, int combinationIndex)
+      {
+        if (combinationIndex == subsetSize)
+        {
+          action(combination);
+          return;
+        }
+
+        for (var index = sourceIndex; index <= numbers.Length - (subsetSize - combinationIndex); index++)
+        {
+          combination[combinationIndex] = numbers[index];
+          Visit(index + 1, combinationIndex + 1);
+        }
+      }
+
+      Visit(0, 0);
+    }
+
+    private static string FormatNumberCombination(IEnumerable<int> numbers)
+    {
+      return string.Join("-", numbers);
     }
 
     private void InitializeLog()
@@ -228,6 +492,9 @@ namespace EuroMillionsStatisticsManager
       }
 
       Historique.ItemsSource = result.History.DefaultView;
+      drawnBallCombinations = result.EstimationHistory.DrawnBallCombinations;
+      ballSubsetFrequencies = result.EstimationHistory.SubsetFrequencies;
+      estimationHistoryAvailable = true;
       PoidsBoules.ItemsSource = result.DrawWeights.DefaultView;
       weightFrequencies = result.BallWeightFrequencies;
       PoidsBoulesStatistiques.ItemsSource = weightFrequencies;
@@ -323,11 +590,13 @@ namespace EuroMillionsStatisticsManager
       }
 
       var (distinctFiles, duplicateCount) = RemoveDuplicateDraws(importedFiles);
+      var estimationHistory = BuildEstimationHistory(distinctFiles);
       var history = BuildHistoryTable(distinctFiles);
       var drawWeights = BuildDrawWeightsTable(distinctFiles);
       return new HistoryLoadResult(
           history,
           drawWeights,
+          estimationHistory,
           BuildWeightFrequencies(drawWeights, "PoidsDesBoules"),
           BuildWeightFrequencies(drawWeights, "PoidsDesEtoiles"),
           BuildBallStatistics(distinctFiles),
@@ -523,6 +792,47 @@ namespace EuroMillionsStatisticsManager
       }
 
       return (distinctFiles, duplicateCount);
+    }
+
+    private static EstimationHistory BuildEstimationHistory(IEnumerable<CsvFileData> files)
+    {
+      var drawnBallCombinations = new HashSet<string>(StringComparer.Ordinal);
+      var subsetFrequencies = new Dictionary<string, int>(StringComparer.Ordinal);
+
+      foreach (var file in files)
+      {
+        var ballColumns = file.Headers
+            .Select((header, index) => (header, index))
+            .Where(column => IsBallHeader(column.header))
+            .Select(column => column.index)
+            .ToArray();
+        if (ballColumns.Length != 5)
+        {
+          continue;
+        }
+
+        foreach (var fields in file.Rows)
+        {
+          var balls = ReadDrawNumbers(fields, ballColumns, 1, 50).Order().ToArray();
+          if (balls.Length != 5)
+          {
+            continue;
+          }
+
+          drawnBallCombinations.Add(FormatNumberCombination(balls));
+          for (var subsetSize = 2; subsetSize <= 4; subsetSize++)
+          {
+            VisitCombinations(balls, subsetSize, combination =>
+            {
+              var key = FormatNumberCombination(combination);
+              subsetFrequencies.TryGetValue(key, out var count);
+              subsetFrequencies[key] = count + 1;
+            });
+          }
+        }
+      }
+
+      return new EstimationHistory(drawnBallCombinations, subsetFrequencies);
     }
 
     private static DataTable BuildHistoryTable(IEnumerable<CsvFileData> files)
@@ -1346,9 +1656,19 @@ namespace EuroMillionsStatisticsManager
 
     private sealed record CsvFileData(string FileName, string[] Headers, List<string[]> Rows);
 
+    private sealed record EstimationHistory(
+      HashSet<string> DrawnBallCombinations,
+      Dictionary<string, int> SubsetFrequencies)
+    {
+      public static EstimationHistory Empty { get; } = new(
+          new HashSet<string>(StringComparer.Ordinal),
+          new Dictionary<string, int>(StringComparer.Ordinal));
+    }
+
     private sealed record HistoryLoadResult(
       DataTable History,
       DataTable DrawWeights,
+      EstimationHistory EstimationHistory,
       IReadOnlyList<WeightFrequency> BallWeightFrequencies,
       IReadOnlyList<WeightFrequency> StarWeightFrequencies,
       IReadOnlyList<BallStatistic> BallStatistics,
@@ -1369,6 +1689,7 @@ namespace EuroMillionsStatisticsManager
         return new HistoryLoadResult(
             new DataTable(),
             new DataTable(),
+            EstimationHistory.Empty,
             [],
             [],
             [],

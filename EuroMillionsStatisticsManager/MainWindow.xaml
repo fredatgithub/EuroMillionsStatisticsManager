@@ -211,7 +211,48 @@
                 SizeChanged="GraphiquePoidsEtoilesCanvas_SizeChanged" />
       </TabItem>
       <TabItem Header="Estimation">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <Border Background="#FFFFDBB8" Padding="18">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
 
+              <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,14">
+                <Button Content="Générer" Click="GenerateDraw_Click" Padding="12,4" Margin="0,0,18,0" />
+                <Button Content="Génération optimisée" Click="GenerateOptimizedDraw_Click" Padding="12,4" />
+                <TextBlock x:Name="EstimationStatus" VerticalAlignment="Center" Margin="18,0,0,0" />
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,28,12">
+                <TextBlock x:Name="BallSelectionCount" Text="0 boule sur 5 sélectionnée(s)" FontWeight="Bold" Margin="0,0,0,8" />
+                <TextBlock Text="Boules" FontWeight="Bold" Margin="0,0,0,8" />
+                <UniformGrid x:Name="BallNumberPanel" Columns="10" />
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
+                <TextBlock x:Name="StarSelectionCount" Text="0 étoile sur 2 sélectionnée(s)" FontWeight="Bold" Margin="0,0,0,8" />
+                <TextBlock Text="Étoiles" FontWeight="Bold" Margin="0,0,0,8" />
+                <UniformGrid x:Name="StarNumberPanel" Columns="3" />
+              </StackPanel>
+
+              <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,2,0,0">
+                <TextBlock x:Name="BallWeightResult" FontWeight="Bold" Margin="0,4" />
+                <TextBlock x:Name="StarWeightResult" FontWeight="Bold" Margin="0,4" />
+                <TextBlock x:Name="BallDistributionResult" FontWeight="Bold" Margin="0,4" TextWrapping="Wrap" />
+                <TextBlock x:Name="HistoryMatchResult" FontWeight="Bold" Margin="0,4" TextWrapping="Wrap" />
+                <TextBlock x:Name="OptimizedScoreResult" FontWeight="Bold" Margin="0,4" TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </ScrollViewer>
       </TabItem>
       <TabItem Header="Log">
         <TextBox x:Name="LogText"
